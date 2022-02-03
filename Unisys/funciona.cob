@@ -1,855 +1,856 @@
-$SET PRTLIBC85
-
- IDENTIFICATION DIVISION.
-
- PROGRAM-ID.     S0947-OBJ-656.
-
- AUTHOR.         ANALISE.......  SIMONE MENEZES.
-                 PROGRAMACAO...  MARCELO DOLABELLA.
-
- INSTALLATION.   UNISYS - BELO HORIZONTE - M.G.
-
- DATE-WRITTEN.   JULHO/2019.
-
- DATE-COMPILED.
-
-*----------------------------------------------------------------*
-*                       RELATORIO MAC/MEX                        *
-*----------------------------------------------------------------*
-
- ENVIRONMENT DIVISION.
-
- CONFIGURATION SECTION.
-
- SOURCE-COMPUTER.    A15.
- OBJECT-COMPUTER.    A15.
- SPECIAL-NAMES.      DECIMAL-POINT   IS  COMMA.
-
-
-*INPUT-OUTPUT SECTION.
-
-*FILE-CONTROL.
-
- DATA DIVISION.
-
-*FILE SECTION.
-
- DATA-BASE SECTION.
-
- DB  BDSEGURANCA OF  BDDATAMEC.
-
- WORKING-STORAGE SECTION.
-
- 01 SV-AREA-REL.
-    COPY "(D0947F05)S0947/LIB/SRV/V094765601 ON PROJETO01".
-
- 77  CLI-JANELA-SEG-WS      PIC S9(11) BINARY EXTENDED COMMON.
- 77 77-CODIGO-INFORMACAO         PIC S9(11) BINARY EXTENDED.
- 77  RESULTADO-77                PIC S9(11)  BINARY EXTENDED.
- 77  PROGRAMA-DESIGNATOR-77      REAL.
- 77  AGENDA-INPUT-77             REAL.
- 77  AGENDA-DESTINO-77           REAL.
- 77  WINDOW-DESIGNATOR-77        REAL.
- 77  ESTACAO-REAL-77             REAL.
- 77  STATION-DESIG-77            PIC S9(11)  BINARY.
- 77  STATION-DEVICE-77           PIC S9(11)  BINARY.
- 77  STATION-LSN-77              PIC S9(11)  BINARY.
- 77  STATION-SEC-77              PIC S9(11)  BINARY.
- 77  IND-SEC-GLOBAL-77           PIC 9(02).
- 77  CODIGO-INFORMACAO-77        PIC S9(11) BINARY EXTENDED.
- 77  ENVIA-TELA-77               PIC S9(11)  BINARY EXTENDED.
-
- 01 VARIAVEIS.
-   02  RESULTADO-WS                PIC S9(11)  BINARY.
-   02  MENSAGEM-WS                 PIC X(160).
-   02  AGENDA-NOME-WS              PIC X(17).
-   02  TELA-MENSAGEM-WS.
-     03  FILLER                  PIC 9(12)   COMP    VALUE
-         @27E7277F4FF6@.
-     03  LINHA-MENSAGEM-WS       PIC X(169).
-     03  FILLER                  PIC 9(06)   COMP    VALUE
-         @27E603@.
-
-   02  IDENTIFICADOR-GETINFO.
-     03  TAMANHO-GETINFO         PIC 9(04).
-     03  CONTEUDO-GETINFO        PIC X(80).
-     03  CONTEUDO-GETINFO-R1  REDEFINES  CONTEUDO-GETINFO.
-         05  IND-SECULO-GETINFO  PIC 9(02).
-         05  RESTO-GETINFO       PIC X(78).
-
-   02 WS-CONT-GRUPOS                  PIC 9(03).
-   02 WS-CONT-PERFIL                  PIC 9(03).
-   02 WS-UNO-CODIGO                   PIC X(07).
-   02 VERSAO-SEG-WS                   PIC 9(01).
-   02 UNO-CODIGO-WS                   PIC 9(04).
-   02 COD-FUNCAO-AUX                  PIC 9(04).
-* CODIGO USUARIO
-   02  USU-CODIGO-WS                   PIC X(07).
-   02  USU-CODIGO-WS-RE REDEFINES USU-CODIGO-WS.
-      03  USU-LETRA-WS                PIC X(01).
-      03  USU-RESTO-WS                PIC X(06).
-* CODIGO USUARIO
-   02  WS-DATA-INT-EXC.
-      03 WS-SEC-EXC               PIC 9(02) COMP.
-      03 WS-ANO-EXC               PIC 9(02) COMP.
-      03 WS-MES-EXC               PIC 9(02) COMP.
-      03 WS-DIA-EXC               PIC 9(02) COMP.
-*  DATA SISTEMA
-   02 DATA-ACCEPT            PIC 9(06)     COMP.
-   02 DATA-ACCEPTR REDEFINES DATA-ACCEPT   COMP.
-      03 ANO-ACCEPT          PIC 9(02)     COMP.
-      03 MES-ACCEPT          PIC 9(02)     COMP.
-      03 DIA-ACCEPT          PIC 9(02)     COMP.
-
-   02 DATA-SISTEMA           PIC 9(08)      COMP.
-   02 DATA-SISTEMAR  REDEFINES DATA-SISTEMA COMP.
-      03 SEC-SISTEMA         PIC 9(02)      COMP.
-      03 ANO-SISTEMA         PIC 9(02)      COMP.
-      03 MES-SISTEMA         PIC 9(02)      COMP.
-      03 DIA-SISTEMA         PIC 9(02)      COMP.
-   02 IND-FIM-GRP            PIC 9(02)      COMP.
-*  DATA SISTEMA
-
-*----------------------------------------------------------------*
-*   AREA COM OPCOES E INFORMACOES DE ENTRADA E SAIDA             *
-*   PARA A LIBRARY DE TRATAMENTO DE EXCECAO DMS                  *
-*----------------------------------------------------------------*
-
- 01  DMS-PARAMETROS-WS                                   COMMON.
-
-*    -----  PARAMETROS DE ENTRADA  -----
-
-     03  DMS-INTERFACE-COMS-WS       PIC X(01).
-     03  DMS-TITLEBD-WS              PIC X(60).
-     03  DMS-RESULT-WS               PIC X(06).
-     03  DMS-PROG-ONLINE-WS          PIC X(01).
-
-*    -----  PARAMETROS DE SAIDA  -----
-
-     03  DMS-ACAO-TOMAR-WS           PIC 9(01).
-     88  DMS-CONTINUAR               VALUE   01.
-     88  DMS-ENCERRAR                VALUE   02.
-     88  DMS-ATIVAR-DMTERMINATE      VALUE   03.
-
-*----------------------------------------------------------------*
-* VALORES ASSUMIDOS PELOS CAMPOS DO HEADER E USADOS NO PROGRAMA  *
-*----------------------------------------------------------------*
-
- 01 VALORES-STATUSVALUE-IN USAGE BINARY.
-    03 FINALIZAR                    PIC S9(11) BINARY VALUE 99.
-
- 01  VALORES-STATUSVALUE-OUT       USAGE BINARY.
-     03  SEND-SEM-ERRO             PIC S9(11) BINARY VALUE 00.
-
-*---------------------------------------------------------------*
-*       CAMPOS DO HEADER PARA PASSAGEM DE PARAMETROS            *
-*---------------------------------------------------------------*
-
- 01  ARRAY-IN-WS                     USAGE REAL COMMON    .
-     03 PROGRAMDESG-WS               REAL                 .
-     03 FUNCTIONINDEX-WS             REAL                 .
-     03 USERCODE-WS                  REAL                 .
-     03 SECURITYDESG-WS              REAL                 .
-     03 FIELDS-WS                    REAL                 .
-     03 TIMESTAMP-WS                 REAL                 .
-     03 STATION-WS                   REAL                 .
-     03 TEXTLENGTH-WS                REAL                 .
-     03 FILLER-WS                    REAL                 .
-     03 STATUSVALUE-WS               REAL                 .
-     03 RESTART-WS                   REAL                 .
-     03 AGENDA-WS                    REAL                 .
-     03 SDFINFO-WS                   REAL                 .
-     03 FORM-KEY-WS                  REAL                 .
-     03 SDFTRANSNUM-WS               REAL                 .
-     03 SDFFORMRECNUM-WS             REAL                 .
-
-*----------------------------------------------------------------*
-* DECLARACAO DE AREAS QUE IRAO RECEBER/FORNECER MSD DO/PARA COMS.*
-* O PROGRAMA RECEBE A MENSAGEM NA AREA "AREA-IN-WS", DEPOIS MOVE *
-* ESTA AREA PARA A AREA DE TELA GERADA PELO SDF.                 *
-******************************************************************
-
-* 01  AREA-IN-WS                      PIC X(28224)         COMMON.
-
-*----------------------------------------------------------------*
-*    AREA AUXILIAR.                                              *
-*----------------------------------------------------------------*
-
-** 01  FML-SISEG       FROM    DICTIONARY.
-
-*- LIBRARY COM OS DADOS OBRIGATORIOS PARA EXECUCAO DO PRG. COMS --
-
- COMMUNICATION   SECTION.
-
-*----------------------------------------------------------------*
-*                                                                *
-* DECLARACAO INPUT E OUTPUT HEADER USADOS PELO COMS.             *
-*                                                                *
-*----------------------------------------------------------------*
-
- INPUT HEADER COMS-IN
-     CONVERSATION AREA.
-     02 CONVERSATION-AREA    REAL.
-        03 FORM-KEY-IN       REAL.
-* OUTPUT HEADER COMS-OUT
-*     CONVERSATION AREA.
-*     02 CONVERSATION-AREA.
-*        03 FORM-KEY-OUT      REAL.
-*        03 PAGINADOR-OUT     REAL.
-  OUTPUT HEADER COMS-OUT
-  CONVERSATION AREA.
-  02 CONVERSATION-AREA.
-     03 FORM-KEY-OUT      REAL.
-     03 PAGINADOR-OUT     PIC S9(11) BINARY EXTENDED.
-     03 AGENDA-OUT        REAL.
-     03 FUNCTIONINDEX-OUT REAL.
-
-******************************************************************
-*                                                                *
-*              CORPO PRINCIPAL DO PROGRAMA                       *
-*                                                                *
-******************************************************************
-
- PROCEDURE DIVISION.
-
- 0001-00-PROGRAMA    SECTION.
-
- 0002-00-INICIO-TRATA-RELATORIO.
-
-     INITIALIZE SV-AREA-REL.
-
-*
-     CHANGE ATTRIBUTE LIBACCESS OF "DCILIBRARY" TO BYFUNCTION.
-*
-     CHANGE ATTRIBUTE FUNCTIONNAME OF "DCILIBRARY" TO
-                                      "COMSSUPPORT".
-*
-     ENABLE INPUT COMS-IN KEY "ONLINE".
-*
-     MOVE    PROGRAMDESG OF COMS-IN  TO  PROGRAMA-DESIGNATOR-77.
-     MOVE    "A_S094765601"          TO  AGENDA-NOME-WS.
-*
-     CALL   "INICIALIZA_HOST_COMS OF S0997/OBJ/LIBRARY/INSTALACAO"
-             USING   AGENDA-NOME-WS
-                     PROGRAMA-DESIGNATOR-77
-                     AGENDA-DESTINO-77
-                     AGENDA-INPUT-77
-                     WINDOW-DESIGNATOR-77
-                     MENSAGEM-WS
-             GIVING  RESULTADO-77.
-*
-     IF  RESULTADO-77    =  00
-         MOVE    "BANCO-BDDATAMEC-<HOST>-<USERCODE>" TO
-                 IDENTIFICADOR-GETINFO
-         CALL    "GET_INSTALLATION_INFO OF S0997/OBJ/SLIBRARIES"
-                 USING IDENTIFICADOR-GETINFO
-                 GIVING RESULTADO-77.
-
-
-    IF  RESULTADO-77    NOT =   0
-             MOVE    "*** ERRO NA OBTENCAO DO TITULO DO BANCO"
-                                      TO MENSAGEM-WS
-             MOVE 1                   TO DESTCOUNT   OF COMS-OUT
-             MOVE 0                   TO STATUSVALUE OF COMS-OUT
-             MOVE 178                 TO TEXTLENGTH  OF COMS-OUT
-             MOVE STATION OF COMS-IN  TO
-                                      DESTINATIONDESG OF COMS-OUT
-             MOVE MENSAGEM-WS         TO      LINHA-MENSAGEM-WS
-             SEND COMS-OUT            FROM    TELA-MENSAGEM-WS
-             GO TO 99900-00-ULTIMO-PARAGRAFO.
-
-     CHANGE ATTRIBUTE TITLE OF BDSEGURANCA  TO CONTEUDO-GETINFO.
-
-     OPEN INQUIRY BDSEGURANCA.
-
-  003-INICIO-REL.
-     RECEIVE COMS-IN MESSAGE INTO SV-AREA-REL.
-     IF STATUSVALUE OF COMS-IN = FINALIZAR
-        STOP RUN.
-******************************************************************
-*    PROCESSAMENTO DAS ACOES                                     *
-******************************************************************
-     MOVE SPACES TO MENSAGEM OF SV-AREA-REL
-           MENSAGEM-RESULTADO OF SV-AREA-REL.
-
-*     IF ACAO OF SV-AREA-REL = "REL"
-*         GO TO 003-INICIO-REL
-*     END-IF.
-
-/* MOVIMENTACAO DO CODIGO USUARIO PARA VAR-AUX
-        MOVE USU-CODIGO OF SV-AREA-REL TO USU-CODIGO-WS.
-        MOVE CLI-JANELA-SEG OF SV-AREA-REL TO CLI-JANELA-SEG-WS.
-/* VALIDACAO DO USUARIO NA USUARIO-CLI
-        PERFORM 0200-ACESSO-USUARIOS-CLI
-               THRU 0210-ACESSO-USUARIOS-CLI-FIM.
-
-/*BUSCA LOTACAO
-        PERFORM 0300-BUSCA-TIPO-LOTACAO
-               THRU 0310-BUSCA-TIPO-LOTACAO-FIM.
-
-/*BUSCA FUNCAO
-        PERFORM 0400-BUSCA-TIPO-FUNCAO
-               THRU 0410-BUSCA-TIPO-FUNCAO-FIM.
-
-/* VERIFICACAO MAC OU MEX
-
-        IF USC-DIA-INI-EXC OF USUARIO-CLI <= ZEROS
-           MOVE "N" TO FLAG-MEX
-
-/*PROCESSAMENTO MAC
-           PERFORM 0500-ACESSO-MATRIZ-GRUPO
-              THRU 0580-ACESSO-MATRIZ-GRUPO-FIM
-
-           PERFORM 0600-00-MONTA-PERFIL
-              THRU 0630-FIM-ACESSO-MAC
-        ELSE
-           MOVE "S" TO FLAG-MEX
-/* PROCESSAMENTO MEX
-           PERFORM 0700-MONTA-MEX
-              THRU 0720-10-ACESSO-MEX-GRUPO-FIM
-
-           PERFORM  0730-MONTA-PERFIL
-              THRU  0830-FIM-ACESSO-MEX.
-
-*    IF IND-FIM-GRP NOT EQUAL 1
-*      GO TO 003-INICIO-REL
-*    ELSE
-*      GO TO 99900-00-ULTIMO-PARAGRAFO.
-
-/* ENVIO DAS INFORMACOES PARA PAGINA
-   0100-00-ENVIA-TELA.
-
-     MOVE 1                    TO DESTCOUNT OF COMS-OUT.
-     MOVE AGENDA OF COMS-IN    TO AGENDA-OUT OF COMS-OUT.
-     MOVE STATION OF COMS-IN   TO DESTINATIONDESG OF COMS-OUT.
-     MOVE FUNCTIONINDEX        OF COMS-IN
-     TO   FUNCTIONINDEX-OUT    OF COMS-OUT.
-     MOVE ZEROS                TO TEXTLENGTH OF COMS-OUT.
-
-     COMPUTE TEXTLENGTH OF COMS-OUT =
-             FUNCTION FORMATTED-SIZE(SV-AREA-REL).
-
-     MOVE ZEROS TO FORM-KEY-OUT.
-
-     SEND COMS-OUT FROM SV-AREA-REL.
-
-     IF  STATUSVALUE OF COMS-OUT NOT = ZEROS
-         MOVE STATUSVALUE      OF COMS-OUT TO RESULTADO-77
-         MOVE FORM-KEY-IN      OF COMS-IN TO FORM-KEY-WS
-         MOVE SDFINFO          OF COMS-IN TO SDFINFO-WS
-         MOVE PROGRAMDESG      OF COMS-IN TO PROGRAMDESG-WS
-         MOVE FUNCTIONINDEX    OF COMS-IN TO FUNCTIONINDEX-WS
-         MOVE USERCODE         OF COMS-IN TO USERCODE-WS
-         MOVE SECURITYDESG     OF COMS-IN TO SECURITYDESG-WS
-         MOVE TIMESTAMP        OF COMS-IN TO TIMESTAMP-WS
-         MOVE STATION          OF COMS-IN TO STATION-WS
-         MOVE TEXTLENGTH       OF COMS-IN TO TEXTLENGTH-WS
-         MOVE STATUSVALUE      OF COMS-IN TO STATUSVALUE-WS
-         MOVE RESTART          OF COMS-IN TO RESTART-WS
-         MOVE AGENDA           OF COMS-IN TO AGENDA-WS
-         CALL   "TRATA_ERRO_SAIDA OF S0997/OBJ/LIBRARY/INSTALACAO"
-                 USING   ARRAY-IN-WS
-                         PROGRAMA-DESIGNATOR-77
-                         RESULTADO-77.
-/*FIM PROGRAMA
-     GO TO 003-INICIO-REL.
-
-*****************************************************************
-*                                                               *
-*           INICIO PROCESSAMENTO - RELATORIO MAC/MEX            *
-*                                                               *
-*****************************************************************
-
- 0200-ACESSO-USUARIOS-CLI.
-*  FIND PARA COMPARAR DATA DO SISTEMA COM USC-DATA-INI-SUBST
-       ACCEPT DATA-ACCEPT FROM DATE.
-       MOVE DIA-ACCEPT TO DIA-SISTEMA.
-       MOVE MES-ACCEPT TO MES-SISTEMA.
-       MOVE ANO-ACCEPT TO ANO-SISTEMA.
-       MOVE 20         TO SEC-SISTEMA.
-
-       FIND FIRST USC-POR-USUARIO AT
-          CLI-CODIGO = CLI-JANELA-SEG-WS AND
-          USU-CODIGO = USU-CODIGO OF SV-AREA-REL
-          ON EXCEPTION
-              IF DMSTATUS(NOTFOUND)
-                 MOVE "Usuario nao cadastrado" TO
-                 MENSAGEM OF SV-AREA-REL
-              ELSE
-                 PERFORM 10000-00-TRATA-ERRO-DMS
-                     THRU 10000-99-TRATA-ERRO-DMS.
-
-  0210-ACESSO-USUARIOS-CLI-FIM.
-      EXIT.
-
-  0300-BUSCA-TIPO-LOTACAO.
-**VERIFICA TIPO USUARIO E UNO-CODIGO
-   MOVE ZEROS TO LOT-CODIGO OF SV-AREA-REL.
-
-   IF USU-LETRA-WS = "C"
-      IF UNO-CODIGO-FIS OF USUARIO-CLI NOT EQUAL ZEROS
-        MOVE UNO-CODIGO-FIS OF USUARIO-CLI TO UNO-CODIGO-WS
-      ELSE
-        IF UNO-CODIGO-FIS OF USUARIO-CLI EQUAL ZEROS AND
-          DATA-SISTEMAR > USC-DATA-INI-SUBST OF USUARIO-CLI AND
-          DATA-SISTEMAR <= USC-DATA-FIM-SUBST OF USUARIO-CLI
-
-           MOVE UNO-CODIGO-SUB OF USUARIO-CLI TO UNO-CODIGO-WS
-           MOVE "S" TO FLAG-SUBFIS OF SV-AREA-REL
-           MOVE "SUB" TO TIPO-AREA OF SV-AREA-REL
-        ELSE
-           MOVE UNO-CODIGO-ORI OF USUARIO-CLI TO UNO-CODIGO-WS.
-           MOVE "ORI" TO TIPO-AREA OF SV-AREA-REL.
-
-**VERIFICA TIPO USUARIO E UNO-CODIGO
-
-**PROCURA LOT-CODIGO
-   FIND UNL-POR-UNO AT
-         CLI-CODIGO = CLI-JANELA-SEG-WS AND
-         UNO-CODIGO = UNO-CODIGO-WS
-         ON  EXCEPTION
-             IF  NOT DMSTATUS (NOTFOUND)
-                 PERFORM 10000-00-TRATA-ERRO-DMS
-                     THRU  10000-99-TRATA-ERRO-DMS
-    END-FIND.
-**PROCURA LOT-CODIGO
-
-**MOVE LOT-CODIGO
-    MOVE LOT-CODIGO OF UNO-LOTACAO
-      TO LOT-CODIGO OF SV-AREA-REL.
-**MOVE LOT-CODIGO
-
-  0310-BUSCA-TIPO-LOTACAO-FIM.
-  EXIT.
-
-  0400-BUSCA-TIPO-FUNCAO.
-
-    MOVE ZEROS TO TIF-CODIGO OF SV-AREA-REL.
-
-    MOVE USU-CODIGO OF SV-AREA-REL TO USU-CODIGO-WS.
-**VERIFICA TIPO USUARIO E UNO-CODIGO
-    IF USU-LETRA-WS = "C"
-       IF DATA-SISTEMAR > USC-DATA-INI-SUBST OF USUARIO-CLI AND
-            DATA-SISTEMAR <= USC-DATA-FIM-SUBST OF USUARIO-CLI
-
-             MOVE FCO-CODIGO-SUB OF USUARIO-CLI
-                                    TO COD-FUNCAO-AUX
-             MOVE USC-DATA-FIM-SUBST OF USUARIO-CLI
-                TO DATA-VALIDADE OF SV-AREA-REL
-       ELSE
-          MOVE FCO-CODIGO-ORI OF USUARIO-CLI TO COD-FUNCAO-AUX
-    ELSE
-       MOVE TIF-CODIGO OF USUARIO-CLI TO COD-FUNCAO-AUX.
-**VERIFICA TIPO USUARIO E UNO-CODIGO
-**PROCURA TIF-CODIGO
-    FIND FIRST FCO-POR-CODIGO AT
-           CLI-CODIGO   =  CLI-JANELA-SEG-WS AND
-           FCO-CODIGO   =  COD-FUNCAO-AUX
-           ON EXCEPTION
-              IF DMSTATUS (NOTFOUND)
-                 MOVE "Tipo de Funcao nao cadastrada."
-                   TO MENSAGEM OF SV-AREA-REL
-                 MOVE 1 TO RESULTADO-77
-              ELSE
-                 PERFORM 10000-00-TRATA-ERRO-DMS
-                    THRU 10000-99-TRATA-ERRO-DMS
-              END-IF
-      END-FIND.
-**PROCURA TIF-CODIGO
-**MOVE TIF-CODIGO
-      MOVE TIF-CODIGO OF FUNCAO
-         TO TIF-CODIGO OF SV-AREA-REL.
-**MOVE TIF-CODIGO
-  0410-BUSCA-TIPO-FUNCAO-FIM.
-  EXIT.
-
-****************************************************************
-*                                                              *
-*                        MONTAGEM MAC                          *
-*                                                              *
-****************************************************************
-
-  0500-ACESSO-MATRIZ-GRUPO.
-* PROCURAR MATRIZ PELA LOTACAO
-    FIND KEY OF NEXT MGR-POR-LOTAC AT
-         CLI-CODIGO = CLI-JANELA-SEG OF SV-AREA-REL AND
-         LOT-CODIGO = LOT-CODIGO  OF SV-AREA-REL    AND
-         TIF-CODIGO = TIF-CODIGO  OF SV-AREA-REL
-         ON EXCEPTION
-            IF DMSTATUS(NOTFOUND)
-               MOVE "Grupo nao cadastrado."
-                 TO MENSAGEM OF SV-AREA-REL
-               GO TO 0580-ACESSO-MATRIZ-GRUPO-FIM
-            ELSE
-               PERFORM 10000-00-TRATA-ERRO-DMS
-                  THRU 10000-99-TRATA-ERRO-DMS
-            END-IF
-    END-FIND.
-
-    IF SIS-CODIGO OF MATRIZ-GRUPO > ZEROS
-      GO TO 0520-MONTA-SISTEMA
-    END-IF.
-
- 0520-MONTA-SISTEMA.
-* PROCURA SISTEMA
-    IF CONT-ABRANG >= 40
-       MOVE "Limite da tabela de ABRANGENCIA excedido"
-         TO MENSAGEM OF SV-AREA-REL
-    END-IF
-
-    ADD 1 TO CONT-ABRANG.
-    MOVE CONT-ABRANG TO CONT-ABRANG OF SV-AREA-REL.
-
-    MOVE SPACES TO SIS-NOME OF SV-AREA-REL(CONT-ABRANG).
-
-    FIND FIRST SIS-POR-CODIGO AT
-          SIS-CODIGO = SIS-CODIGO OF MATRIZ-GRUPO
-           ON EXCEPTION
-              IF DMSTATUS(NOTFOUND)
-                 MOVE "Sistema nao cadastrado."
-                   TO MENSAGEM OF SV-AREA-REL
-              ELSE
-                 PERFORM 10000-00-TRATA-ERRO-DMS
-                    THRU 10000-99-TRATA-ERRO-DMS
-              END-IF
-     END-FIND.
-
-    IF SIS-CODIGO OF SISTEMAS > ZEROS
-         MOVE SIS-CODIGO OF SISTEMAS
-              TO SIS-CODIGO-ABG OF SV-AREA-REL(CONT-ABRANG).
-         MOVE SIS-NOME OF SISTEMAS
-               TO SIS-NOME OF SV-AREA-REL(CONT-ABRANG).
-
-     GO TO 0530-MONTA-COD-ABRANG.
-
-  0530-MONTA-COD-ABRANG.
-/*MONTAGEM DA ABRANGENCIA
-
-     FIND MAB-POR-LOT-TIF AT
-           CLI-CODIGO   = CLI-JANELA-SEG OF SV-AREA-REL AND
-           SIS-CODIGO   = SIS-CODIGO OF SISTEMAS        AND
-           LOT-CODIGO   = LOT-CODIGO OF SV-AREA-REL     AND
-           TIF-CODIGO   = TIF-CODIGO OF SV-AREA-REL
-           ON EXCEPTION
-              IF NOT DMSTATUS (NOTFOUND)
-                 PERFORM 10000-00-TRATA-ERRO-DMS
-                    THRU 10000-99-TRATA-ERRO-DMS
-              END-IF
-     END-FIND.
-
-     IF UCS-ABRANGENCIA OF MATRIZ-ABRANG NOT = ZEROS
-          MOVE UCS-ABRANGENCIA OF MATRIZ-ABRANG
-             TO UCS-ABRANGENCIA OF SV-AREA-REL(CONT-ABRANG)
-          GO TO 0540-MONTA-NOME-ABRANG.
-
-  0540-MONTA-NOME-ABRANG.
-
-    FIND FIRST TAG-POR-IDENT AT
-          TAG-CLIENTE  =  CLI-CODIGO  OF USUARIO-CLI      AND
-          TAG-SISTEMA  =  SIS-CODIGO  OF MATRIZ-GRUPO      AND
-          TAG-CODIGO   =  UCS-ABRANGENCIA OF MATRIZ-ABRANG
-           ON EXCEPTION
-              IF DMSTATUS (NOTFOUND)
-                 MOVE "Codigo abrangencia nao cadastrado"
-                   TO MENSAGEM OF SV-AREA-REL
-              ELSE
-                 PERFORM 10000-00-TRATA-ERRO-DMS
-                    THRU 10000-99-TRATA-ERRO-DMS
-              END-IF
-    END-FIND.
-    IF TAG-DESCRICAO OF TAB-ABRANGENCIA NOT = SPACES
-      MOVE TAG-DESCRICAO   OF TAB-ABRANGENCIA
-        TO ABR-DESCRICAO   OF SV-AREA-REL(CONT-ABRANG).
-
-     GO TO 0550-MONTA-GRUPOS.
-
-  0550-MONTA-GRUPOS.
-* MONTAGEM GRUPOS
-   MOVE ZEROS TO CONT-GRUPOS OF SV-AREA-REL.
-
-   SET GOP-POR-MNEMONICO TO BEGINNING.
-   GO TO 0560-COMPOR-GRUPOS.
-
-  0560-COMPOR-GRUPOS.
-
-      FIND NEXT GOP-POR-MNEMONICO AT
-          CFS-VER-SISEG = VERSAO-SEG-WS AND
-          GOP-CLIENTE   = CLI-JANELA-SEG-WS AND
-          GOP-SISTEMA   = SIS-CODIGO OF SISTEMAS
-          ON EXCEPTION
-             IF DMSTATUS (NOTFOUND)
-                  MOVE "Nao ha grupos cadastrados para este siste
--                       "ma" TO MENSAGEM OF SV-AREA-REL
-             ELSE
-                PERFORM 10000-00-TRATA-ERRO-DMS
-                   THRU 10000-99-TRATA-ERRO-DMS
-             END-IF
-         GO TO 0570-MOVE-DADOS
-     END-FIND.
-
-  0570-MOVE-DADOS.
-
-     IF CONT-GRUPOS >= 300
-        MOVE "Limite da tabela de GRUPOS excedido"
-          TO MENSAGEM OF SV-AREA-REL
-     END-IF
-
-     ADD 1 TO CONT-GRUPOS.
-     MOVE CONT-GRUPOS TO CONT-GRUPOS OF SV-AREA-REL.
-
-     MOVE SIS-CODIGO OF SISTEMAS
-       TO SIS-CODIGO-GRP OF SV-AREA-REL(CONT-GRUPOS).
-     MOVE GOP-DESCRICAO OF GRUPOS-OPERACOES
-       TO GOP-DESCRICAO OF SV-AREA-REL(CONT-GRUPOS).
-     MOVE GOP-MNEMONICO OF GRUPOS-OPERACOES
-       TO GOP-MNEMONICO OF SV-AREA-REL(CONT-GRUPOS).
-
-
-*     GO TO 0500-ACESSO-MATRIZ-GRUPO.
-
-*     FIND KEY OF NEXT MGR-POR-LOTAC AT
-*         CLI-CODIGO = CLI-JANELA-SEG OF SV-AREA-REL AND
-*         LOT-CODIGO = LOT-CODIGO  OF SV-AREA-REL    AND
-*         TIF-CODIGO = TIF-CODIGO  OF SV-AREA-REL
-*         ON EXCEPTION
-*            IF DMSTATUS(NOTFOUND)
-*               GO TO 0580-ACESSO-MATRIZ-GRUPO-FIM
-*            ELSE
-*               PERFORM 10000-00-TRATA-ERRO-DMS
-*                  THRU 10000-99-TRATA-ERRO-DMS
-*            END-IF
-*    END-FIND.
-
-  0580-ACESSO-MATRIZ-GRUPO-FIM.
-  EXIT.
-
-  0600-00-MONTA-PERFIL.
-* MONTAGEM PERFIL
-     MOVE ZEROS TO CONT-PERFIL OF SV-AREA-REL.
-
-     SET PER-POR-IDENT TO BEGINNING.
-     GO TO 0610-COMPOR-PERFIL.
-
- 0610-COMPOR-PERFIL.
-
-     FIND NEXT PER-POR-IDENT AT
-          SIS-CODIGO    = SIS-CODIGO OF SISTEMAS
-          ON EXCEPTION
-             IF DMSTATUS (NOTFOUND)
-              GO TO 0630-FIM-ACESSO-MAC
-             ELSE
-                PERFORM 10000-00-TRATA-ERRO-DMS
-                   THRU 10000-99-TRATA-ERRO-DMS
-             END-IF
-         GO TO 0620-MOVE-DADOS
-     END-FIND.
-
-*     GO TO 0620-MOVE-DADOS.
-
- 0620-MOVE-DADOS.
-
-     IF CONT-PERFIL >= 100
-        MOVE "Limite da tabela de PERFIL excedido"
-          TO MENSAGEM OF SV-AREA-REL
-     END-IF.
-
-     ADD 1 TO CONT-PERFIL.
-
-     MOVE SIS-CODIGO OF SISTEMAS
-       TO SIS-CODIGO-PER OF SV-AREA-REL(CONT-PERFIL).
-     MOVE PER-DESCRICAO OF PERFIL
-       TO PER-DESCRICAO OF SV-AREA-REL(CONT-PERFIL).
-     MOVE PER-CODIGO    OF PERFIL
-       TO PER-CODIGO    OF SV-AREA-REL(CONT-PERFIL).
-
-*     GO TO 0610-COMPOR-PERFIL.
-*     FIND NEXT PER-POR-IDENT AT
-*          SIS-CODIGO    = SIS-CODIGO OF SISTEMAS
-*          ON EXCEPTION
-*             IF DMSTATUS (NOTFOUND)
-*                GO TO 0630-FIM-ACESSO-MAC
-*             ELSE
-*                PERFORM 10000-00-TRATA-ERRO-DMS
-*                   THRU 10000-99-TRATA-ERRO-DMS
-*             END-IF
-*
-*     END-FIND.
-
-*     GO TO 0620-MOVE-DADOS.
-
-  0630-FIM-ACESSO-MAC.
-  EXIT.
-****************************************************************
-*                                                              *
-*                        MONTAGEM MEX                          *
-*                                                              *
-****************************************************************
-  0700-MONTA-MEX.
-
-
-     MOVE USC-SEC-FIM-EXC OF USUARIO-CLI
-                          TO SEC-VALIDADE OF SV-AREA-REL.
-     MOVE USC-ANO-FIM-EXC OF USUARIO-CLI
-                          TO ANO-VALIDADE OF SV-AREA-REL.
-     MOVE USC-MES-FIM-EXC OF USUARIO-CLI
-                          TO MES-VALIDADE OF SV-AREA-REL.
-     MOVE USC-DIA-FIM-EXC OF USUARIO-CLI
-                          TO DIA-VALIDADE OF SV-AREA-REL.
-
-     GO TO 0710-MONTA-GRUPOS.
-
-   0710-MONTA-GRUPOS.
-** MONTAGEM GRUPO MAX
-     MOVE ZEROS TO CONT-GRUPOS OF SV-AREA-REL.
-
-     SET GOP-POR-MNEMONICO TO BEGINNING.
-
-     FIND NEXT GOP-POR-MNEMONICO AT
-       CFS-VER-SISEG = VERSAO-SEG-WS AND
-       GOP-CLIENTE   = CLI-JANELA-SEG OF SV-AREA-REL AND
-       GOP-SISTEMA   = SIS-CODIGO OF SISTEMAS
-       ON EXCEPTION
-        IF DMSTATUS (NOTFOUND)
-           IF CONT-GRUPOS = ZEROS
-             MOVE "Nao ha grupos cadastrados para este siste
--                 "ma" TO MENSAGEM OF SV-AREA-REL
-           END-IF
-        ELSE
-           PERFORM 10000-00-TRATA-ERRO-DMS
-              THRU 10000-99-TRATA-ERRO-DMS
-       END-IF
-       GO TO 0710-10-MONTA-EXCESSAO
-     END-FIND.
-
-   0710-10-MONTA-EXCESSAO.
-
-    FIND GRX-POR-USU AT
-         CLI-CODIGO = CLI-JANELA-SEG-WS               AND
-         SIS-CODIGO = SIS-CODIGO OF SISTEMAS          AND
-         USU-CODIGO = USU-CODIGO OF SV-AREA-REL       AND
-         GOP-CODIGO = GOP-CODIGO OF GRUPOS-OPERACOES
-         ON EXCEPTION
-            IF NOT DMSTATUS(NOTFOUND)
-               PERFORM 10000-00-TRATA-ERRO-DMS
-                  THRU 10000-99-TRATA-ERRO-DMS
-*               GO TO 1500-99-ATU-GRUPOS
-            END-IF
-    END-FIND.
-
-    GO TO 0720-MOVE-DADOS.
-
-   0720-MOVE-DADOS.
-
-     IF CONT-GRUPOS >= 300
-        MOVE "Limite da tabela de grupos excedido"
-          TO MENSAGEM OF SV-AREA-REL
-*        GO TO 1300-99-MONTA-GRUPOS
-     END-IF
-
-     ADD 1 TO CONT-GRUPOS.
-     MOVE CONT-GRUPOS TO CONT-GRUPOS OF SV-AREA-REL.
-
-     MOVE SIS-CODIGO OF SISTEMAS
-       TO SIS-CODIGO-GRP OF SV-AREA-REL(CONT-GRUPOS).
-     MOVE GOP-DESCRICAO OF GRUPOS-OPERACOES
-       TO GOP-DESCRICAO OF SV-AREA-REL(CONT-GRUPOS).
-     MOVE GOP-MNEMONICO OF GRUPOS-OPERACOES
-       TO GOP-MNEMONICO OF SV-AREA-REL(CONT-GRUPOS).
-
-  0720-10-ACESSO-MEX-GRUPO-FIM.
-  EXIT.
-
-  0730-MONTA-PERFIL.
-* MONTAGEM PERFIL MEX
-     MOVE ZEROS TO CONT-PERFIL OF SV-AREA-REL.
-
-     SET PER-POR-IDENT TO BEGINNING.
-
-     FIND NEXT PER-POR-IDENT AT
-       SIS-CODIGO = SIS-CODIGO OF SISTEMAS
-          ON EXCEPTION
-             IF NOT DMSTATUS (NOTFOUND)
-                PERFORM 10000-00-TRATA-ERRO-DMS
-                   THRU 10000-99-TRATA-ERRO-DMS
-             END-IF
-             GO TO 0740-COMPOR-PERFIL
-     END-FIND.
-
-   0740-COMPOR-PERFIL.
-
-     FIND NEXT PRX-POR-USU-PER AT
-        CLI-CODIGO = CLI-JANELA-SEG-WS      AND
-        SIS-CODIGO = SIS-CODIGO OF SISTEMAS AND
-        USU-CODIGO = USU-CODIGO OF SV-AREA-REL AND
-        PER-CODIGO = PER-CODIGO OF PERFIL
-        ON EXCEPTION
-          IF NOT DMSTATUS(NOTFOUND)
-             PERFORM 10000-00-TRATA-ERRO-DMS
-                THRU 10000-99-TRATA-ERRO-DMS
-          END-IF
-        GO TO 0750-MOVE-DADOS
-     END-FIND.
-
- 0750-MOVE-DADOS.
-
-     IF CONT-PERFIL >= 200
-        MOVE "Limite da tabela de perfil excedido"
-          TO MENSAGEM OF SV-AREA-REL
-*        MOVE 1 TO RESULTADO-77
-        GO TO 0730-MONTA-PERFIL
-     END-IF.
-
-     ADD 1 TO CONT-PERFIL
-     MOVE CONT-PERFIL TO CONT-PERFIL OF SV-AREA-REL.
-
-     MOVE PER-DESCRICAO OF PERFIL
-       TO PER-DESCRICAO OF SV-AREA-REL(CONT-PERFIL).
-     MOVE PER-CODIGO    OF PERFIL
-       TO PER-CODIGO    OF SV-AREA-REL(CONT-PERFIL).
-
-  0830-FIM-ACESSO-MEX.
-    EXIT.
-
-*---
-
- 10000-00-TRATA-ERRO-DMS.
-*ERRO BANDO DE DADOS
-     MOVE    DMSTATUS (DMRESULT) TO  DMS-RESULT-WS.
-     MOVE FORM-KEY-IN      OF COMS-IN TO FORM-KEY-WS
-     MOVE SDFINFO          OF COMS-IN TO SDFINFO-WS
-     MOVE PROGRAMDESG      OF COMS-IN TO PROGRAMDESG-WS
-     MOVE FUNCTIONINDEX    OF COMS-IN TO FUNCTIONINDEX-WS
-     MOVE USERCODE         OF COMS-IN TO USERCODE-WS
-     MOVE SECURITYDESG     OF COMS-IN TO SECURITYDESG-WS
-     MOVE TIMESTAMP        OF COMS-IN TO TIMESTAMP-WS
-     MOVE STATION          OF COMS-IN TO STATION-WS
-     MOVE TEXTLENGTH       OF COMS-IN TO TEXTLENGTH-WS
-     MOVE STATUSVALUE      OF COMS-IN TO STATUSVALUE-WS
-     MOVE RESTART          OF COMS-IN TO RESTART-WS
-     MOVE AGENDA           OF COMS-IN TO AGENDA-WS
-
-     CALL "TRATA_EXCECAO_DMS OF S0997/OBJ/LIBRARY/INSTALACAO"
-          USING   DMS-PARAMETROS-WS
-                  ARRAY-IN-WS
-          GIVING  RESULTADO-77.
-
-     IF  DMS-ENCERRAR
-         STOP    RUN.
-
-     IF  DMS-ATIVAR-DMTERMINATE
-         CALL    SYSTEM  DMTERMINATE.
-
-     MOVE "Erro no acesso ao banco de dados."
-       TO MENSAGEM OF SV-AREA-REL.
-
-     MOVE 1 TO RESULTADO-77.
-
- 10000-99-TRATA-ERRO-DMS.
-     EXIT.
-
- 99900-00-ULTIMO-PARAGRAFO.
-      CLOSE BDSEGURANCA.
-      STOP RUN.
-
- END-OF-JOB.
-
+000000$SET PRTLIBC85
+000000
+000000 IDENTIFICATION DIVISION.
+000000
+000000 PROGRAM-ID.     S0947-OBJ-656.
+000000
+000000 AUTHOR.         ANALISE.......  SIMONE MENEZES.
+000000                 PROGRAMACAO...  MARCELO DOLABELLA.
+000000
+000000 INSTALLATION.   UNISYS - BELO HORIZONTE - M.G.
+000000
+000000 DATE-WRITTEN.   JULHO/2019.
+000000
+000000 DATE-COMPILED.
+000000
+000000*----------------------------------------------------------------*
+000000*                       RELATORIO MAC/MEX                        *
+000000*----------------------------------------------------------------*
+000000
+000000 ENVIRONMENT DIVISION.
+000000
+000000 CONFIGURATION SECTION.
+000000
+000000 SOURCE-COMPUTER.    A15.
+000000 OBJECT-COMPUTER.    A15.
+000000 SPECIAL-NAMES.      DECIMAL-POINT   IS  COMMA.
+000000
+000000
+000000*INPUT-OUTPUT SECTION.
+000000
+000000*FILE-CONTROL.
+000000
+000000 DATA DIVISION.
+000000
+000000*FILE SECTION.
+000000
+000000 DATA-BASE SECTION.
+000000
+000000 DB  BDSEGURANCA OF  BDDATAMEC.
+000000
+000000 WORKING-STORAGE SECTION.
+000000
+000000 01 SV-AREA-REL.
+000000    COPY "(D0947F05)S0947/LIB/SRV/V094765601 ON PROJETO01".
+000000
+000000 77  CLI-JANELA-SEG-WS      PIC S9(11) BINARY EXTENDED COMMON.
+000000 77 77-CODIGO-INFORMACAO         PIC S9(11) BINARY EXTENDED.
+000000 77  RESULTADO-77                PIC S9(11)  BINARY EXTENDED.
+000000 77  PROGRAMA-DESIGNATOR-77      REAL.
+000000 77  AGENDA-INPUT-77             REAL.
+000000 77  AGENDA-DESTINO-77           REAL.
+000000 77  WINDOW-DESIGNATOR-77        REAL.
+000000 77  ESTACAO-REAL-77             REAL.
+000000 77  STATION-DESIG-77            PIC S9(11)  BINARY.
+000000 77  STATION-DEVICE-77           PIC S9(11)  BINARY.
+000000 77  STATION-LSN-77              PIC S9(11)  BINARY.
+000000 77  STATION-SEC-77              PIC S9(11)  BINARY.
+000000 77  IND-SEC-GLOBAL-77           PIC 9(02).
+000000 77  CODIGO-INFORMACAO-77        PIC S9(11) BINARY EXTENDED.
+000000 77  ENVIA-TELA-77               PIC S9(11)  BINARY EXTENDED.
+000000
+000000 01 VARIAVEIS.
+000000   02  RESULTADO-WS                PIC S9(11)  BINARY.
+000000   02  MENSAGEM-WS                 PIC X(160).
+000000   02  AGENDA-NOME-WS              PIC X(17).
+000000   02  TELA-MENSAGEM-WS.
+000000     03  FILLER                  PIC 9(12)   COMP    VALUE
+000000         @27E7277F4FF6@.
+000000     03  LINHA-MENSAGEM-WS       PIC X(169).
+000000     03  FILLER                  PIC 9(06)   COMP    VALUE
+000000         @27E603@.
+000000
+000000   02  IDENTIFICADOR-GETINFO.
+000000     03  TAMANHO-GETINFO         PIC 9(04).
+000000     03  CONTEUDO-GETINFO        PIC X(80).
+000000     03  CONTEUDO-GETINFO-R1  REDEFINES  CONTEUDO-GETINFO.
+000000         05  IND-SECULO-GETINFO  PIC 9(02).
+000000         05  RESTO-GETINFO       PIC X(78).
+000000
+000000   02 WS-CONT-GRUPOS                  PIC 9(03).
+000000   02 WS-CONT-PERFIL                  PIC 9(03).
+000000   02 WS-UNO-CODIGO                   PIC X(07).
+000000   02 VERSAO-SEG-WS                   PIC 9(01).
+000000   02 UNO-CODIGO-WS                   PIC 9(04).
+000000   02 COD-FUNCAO-AUX                  PIC 9(04).
+000000* CODIGO USUARIO
+000000   02  USU-CODIGO-WS                   PIC X(07).
+000000   02  USU-CODIGO-WS-RE REDEFINES USU-CODIGO-WS.
+000000      03  USU-LETRA-WS                PIC X(01).
+000000      03  USU-RESTO-WS                PIC X(06).
+000000* CODIGO USUARIO
+000000   02  WS-DATA-INT-EXC.
+000000      03 WS-SEC-EXC               PIC 9(02) COMP.
+000000      03 WS-ANO-EXC               PIC 9(02) COMP.
+000000      03 WS-MES-EXC               PIC 9(02) COMP.
+000000      03 WS-DIA-EXC               PIC 9(02) COMP.
+000000*  DATA SISTEMA
+000000   02 DATA-ACCEPT            PIC 9(06)     COMP.
+000000   02 DATA-ACCEPTR REDEFINES DATA-ACCEPT   COMP.
+000000      03 ANO-ACCEPT          PIC 9(02)     COMP.
+000000      03 MES-ACCEPT          PIC 9(02)     COMP.
+000000      03 DIA-ACCEPT          PIC 9(02)     COMP.
+000000
+000000   02 DATA-SISTEMA           PIC 9(08)      COMP.
+000000   02 DATA-SISTEMAR  REDEFINES DATA-SISTEMA COMP.
+000000      03 SEC-SISTEMA         PIC 9(02)      COMP.
+000000      03 ANO-SISTEMA         PIC 9(02)      COMP.
+000000      03 MES-SISTEMA         PIC 9(02)      COMP.
+000000      03 DIA-SISTEMA         PIC 9(02)      COMP.
+000000   02 IND-FIM-GRP            PIC 9(02)      COMP.
+000000*  DATA SISTEMA
+000000
+000000*----------------------------------------------------------------*
+000000*   AREA COM OPCOES E INFORMACOES DE ENTRADA E SAIDA             *
+000000*   PARA A LIBRARY DE TRATAMENTO DE EXCECAO DMS                  *
+000000*----------------------------------------------------------------*
+000000
+000000 01  DMS-PARAMETROS-WS                                   COMMON.
+000000
+000000*    -----  PARAMETROS DE ENTRADA  -----
+000000
+000000     03  DMS-INTERFACE-COMS-WS       PIC X(01).
+000000     03  DMS-TITLEBD-WS              PIC X(60).
+000000     03  DMS-RESULT-WS               PIC X(06).
+000000     03  DMS-PROG-ONLINE-WS          PIC X(01).
+000000
+000000*    -----  PARAMETROS DE SAIDA  -----
+000000
+000000     03  DMS-ACAO-TOMAR-WS           PIC 9(01).
+000000     88  DMS-CONTINUAR               VALUE   01.
+000000     88  DMS-ENCERRAR                VALUE   02.
+000000     88  DMS-ATIVAR-DMTERMINATE      VALUE   03.
+000000
+000000*----------------------------------------------------------------*
+000000* VALORES ASSUMIDOS PELOS CAMPOS DO HEADER E USADOS NO PROGRAMA  *
+000000*----------------------------------------------------------------*
+000000
+000000 01 VALORES-STATUSVALUE-IN USAGE BINARY.
+000000    03 FINALIZAR                    PIC S9(11) BINARY VALUE 99.
+000000
+000000 01  VALORES-STATUSVALUE-OUT       USAGE BINARY.
+000000     03  SEND-SEM-ERRO             PIC S9(11) BINARY VALUE 00.
+000000
+000000*---------------------------------------------------------------*
+000000*       CAMPOS DO HEADER PARA PASSAGEM DE PARAMETROS            *
+000000*---------------------------------------------------------------*
+000000
+000000 01  ARRAY-IN-WS                     USAGE REAL COMMON    .
+000000     03 PROGRAMDESG-WS               REAL                 .
+000000     03 FUNCTIONINDEX-WS             REAL                 .
+000000     03 USERCODE-WS                  REAL                 .
+000000     03 SECURITYDESG-WS              REAL                 .
+000000     03 FIELDS-WS                    REAL                 .
+000000     03 TIMESTAMP-WS                 REAL                 .
+000000     03 STATION-WS                   REAL                 .
+000000     03 TEXTLENGTH-WS                REAL                 .
+000000     03 FILLER-WS                    REAL                 .
+000000     03 STATUSVALUE-WS               REAL                 .
+000000     03 RESTART-WS                   REAL                 .
+000000     03 AGENDA-WS                    REAL                 .
+000000     03 SDFINFO-WS                   REAL                 .
+000000     03 FORM-KEY-WS                  REAL                 .
+000000     03 SDFTRANSNUM-WS               REAL                 .
+000000     03 SDFFORMRECNUM-WS             REAL                 .
+000000
+000000*----------------------------------------------------------------*
+000000* DECLARACAO DE AREAS QUE IRAO RECEBER/FORNECER MSD DO/PARA COMS.*
+000000* O PROGRAMA RECEBE A MENSAGEM NA AREA "AREA-IN-WS", DEPOIS MOVE *
+000000* ESTA AREA PARA A AREA DE TELA GERADA PELO SDF.                 *
+000000******************************************************************
+000000
+000000* 01  AREA-IN-WS                      PIC X(28224)         COMMON.
+000000
+000000*----------------------------------------------------------------*
+000000*    AREA AUXILIAR.                                              *
+000000*----------------------------------------------------------------*
+000000
+000000** 01  FML-SISEG       FROM    DICTIONARY.
+000000
+000000*- LIBRARY COM OS DADOS OBRIGATORIOS PARA EXECUCAO DO PRG. COMS --
+000000
+000000 COMMUNICATION   SECTION.
+000000
+000000*----------------------------------------------------------------*
+000000*                                                                *
+000000* DECLARACAO INPUT E OUTPUT HEADER USADOS PELO COMS.             *
+000000*                                                                *
+000000*----------------------------------------------------------------*
+000000
+000000 INPUT HEADER COMS-IN
+000000     CONVERSATION AREA.
+000000     02 CONVERSATION-AREA    REAL.
+000000        03 FORM-KEY-IN       REAL.
+000000* OUTPUT HEADER COMS-OUT
+000000*     CONVERSATION AREA.
+000000*     02 CONVERSATION-AREA.
+000000*        03 FORM-KEY-OUT      REAL.
+000000*        03 PAGINADOR-OUT     REAL.
+000000  OUTPUT HEADER COMS-OUT
+000000  CONVERSATION AREA.
+000000  02 CONVERSATION-AREA.
+000000     03 FORM-KEY-OUT      REAL.
+000000     03 PAGINADOR-OUT     PIC S9(11) BINARY EXTENDED.
+000000     03 AGENDA-OUT        REAL.
+000000     03 FUNCTIONINDEX-OUT REAL.
+000000
+000000******************************************************************
+000000*                                                                *
+000000*              CORPO PRINCIPAL DO PROGRAMA                       *
+000000*                                                                *
+000000******************************************************************
+000000
+000000 PROCEDURE DIVISION.
+000000
+000000 0001-00-PROGRAMA    SECTION.
+000000
+000000 0002-00-INICIO-TRATA-RELATORIO.
+000000
+000000     INITIALIZE SV-AREA-REL.
+000000
+000000*
+000000     CHANGE ATTRIBUTE LIBACCESS OF "DCILIBRARY" TO BYFUNCTION.
+000000*
+000000     CHANGE ATTRIBUTE FUNCTIONNAME OF "DCILIBRARY" TO
+000000                                      "COMSSUPPORT".
+000000*
+000000     ENABLE INPUT COMS-IN KEY "ONLINE".
+000000*
+000000     MOVE    PROGRAMDESG OF COMS-IN  TO  PROGRAMA-DESIGNATOR-77.
+000000     MOVE    "A_S094765601"          TO  AGENDA-NOME-WS.
+000000*
+000000     CALL   "INICIALIZA_HOST_COMS OF S0997/OBJ/LIBRARY/INSTALACAO"
+000000             USING   AGENDA-NOME-WS
+000000                     PROGRAMA-DESIGNATOR-77
+000000                     AGENDA-DESTINO-77
+000000                     AGENDA-INPUT-77
+000000                     WINDOW-DESIGNATOR-77
+000000                     MENSAGEM-WS
+000000             GIVING  RESULTADO-77.
+000000*
+000000     IF  RESULTADO-77    =  00
+000000         MOVE    "BANCO-BDDATAMEC-<HOST>-<USERCODE>" TO
+000000                 IDENTIFICADOR-GETINFO
+000000         CALL    "GET_INSTALLATION_INFO OF S0997/OBJ/SLIBRARIES"
+000000                 USING IDENTIFICADOR-GETINFO
+000000                 GIVING RESULTADO-77.
+000000
+000000
+000000    IF  RESULTADO-77    NOT =   0
+000000             MOVE    "*** ERRO NA OBTENCAO DO TITULO DO BANCO"
+000000                                      TO MENSAGEM-WS
+000000             MOVE 1                   TO DESTCOUNT   OF COMS-OUT
+000000             MOVE 0                   TO STATUSVALUE OF COMS-OUT
+000000             MOVE 178                 TO TEXTLENGTH  OF COMS-OUT
+000000             MOVE STATION OF COMS-IN  TO
+000000                                      DESTINATIONDESG OF COMS-OUT
+000000             MOVE MENSAGEM-WS         TO      LINHA-MENSAGEM-WS
+000000             SEND COMS-OUT            FROM    TELA-MENSAGEM-WS
+000000             GO TO 99900-00-ULTIMO-PARAGRAFO.
+000000
+000000     CHANGE ATTRIBUTE TITLE OF BDSEGURANCA  TO CONTEUDO-GETINFO.
+000000
+000000     OPEN INQUIRY BDSEGURANCA.
+000000
+000000  003-INICIO-REL.
+000000     RECEIVE COMS-IN MESSAGE INTO SV-AREA-REL.
+000000     IF STATUSVALUE OF COMS-IN = FINALIZAR
+000000        STOP RUN.
+000000******************************************************************
+000000*    PROCESSAMENTO DAS ACOES                                     *
+000000******************************************************************
+000000     MOVE SPACES TO MENSAGEM OF SV-AREA-REL
+000000           MENSAGEM-RESULTADO OF SV-AREA-REL.
+000000
+000000*     IF ACAO OF SV-AREA-REL = "REL"
+000000*         GO TO 003-INICIO-REL
+000000*     END-IF.
+000000
+000000/* MOVIMENTACAO DO CODIGO USUARIO PARA VAR-AUX
+000000        MOVE USU-CODIGO OF SV-AREA-REL TO USU-CODIGO-WS.
+000000        MOVE CLI-JANELA-SEG OF SV-AREA-REL TO CLI-JANELA-SEG-WS.
+000000/* VALIDACAO DO USUARIO NA USUARIO-CLI
+000000        PERFORM 0200-ACESSO-USUARIOS-CLI
+000000               THRU 0210-ACESSO-USUARIOS-CLI-FIM.
+000000
+000000/*BUSCA LOTACAO
+000000        PERFORM 0300-BUSCA-TIPO-LOTACAO
+000000               THRU 0310-BUSCA-TIPO-LOTACAO-FIM.
+000000
+000000/*BUSCA FUNCAO
+000000        PERFORM 0400-BUSCA-TIPO-FUNCAO
+000000               THRU 0410-BUSCA-TIPO-FUNCAO-FIM.
+000000
+000000/* VERIFICACAO MAC OU MEX
+000000
+000000        IF USC-DIA-INI-EXC OF USUARIO-CLI <= ZEROS
+000000           MOVE "N" TO FLAG-MEX
+000000
+000000/*PROCESSAMENTO MAC
+000000           PERFORM 0500-ACESSO-MATRIZ-GRUPO
+000000              THRU 0580-ACESSO-MATRIZ-GRUPO-FIM
+000000
+000000           PERFORM 0600-00-MONTA-PERFIL
+000000              THRU 0630-FIM-ACESSO-MAC
+000000        ELSE
+000000           MOVE "S" TO FLAG-MEX
+000000/* PROCESSAMENTO MEX
+000000           PERFORM 0700-MONTA-MEX
+000000              THRU 0720-10-ACESSO-MEX-GRUPO-FIM
+000000
+000000           PERFORM  0730-MONTA-PERFIL
+000000              THRU  0830-FIM-ACESSO-MEX.
+000000
+000000*    IF IND-FIM-GRP NOT EQUAL 1
+000000*      GO TO 003-INICIO-REL
+000000*    ELSE
+000000*      GO TO 99900-00-ULTIMO-PARAGRAFO.
+000000
+000000/* ENVIO DAS INFORMACOES PARA PAGINA
+000000   0100-00-ENVIA-TELA.
+000000
+000000     MOVE 1                    TO DESTCOUNT OF COMS-OUT.
+000000     MOVE AGENDA OF COMS-IN    TO AGENDA-OUT OF COMS-OUT.
+000000     MOVE STATION OF COMS-IN   TO DESTINATIONDESG OF COMS-OUT.
+000000     MOVE FUNCTIONINDEX        OF COMS-IN
+000000     TO   FUNCTIONINDEX-OUT    OF COMS-OUT.
+000000     MOVE ZEROS                TO TEXTLENGTH OF COMS-OUT.
+000000
+000000     COMPUTE TEXTLENGTH OF COMS-OUT =
+000000             FUNCTION FORMATTED-SIZE(SV-AREA-REL).
+000000
+000000     MOVE ZEROS TO FORM-KEY-OUT.
+000000
+000000     SEND COMS-OUT FROM SV-AREA-REL.
+000000
+000000     IF  STATUSVALUE OF COMS-OUT NOT = ZEROS
+000000         MOVE STATUSVALUE      OF COMS-OUT TO RESULTADO-77
+000000         MOVE FORM-KEY-IN      OF COMS-IN TO FORM-KEY-WS
+000000         MOVE SDFINFO          OF COMS-IN TO SDFINFO-WS
+000000         MOVE PROGRAMDESG      OF COMS-IN TO PROGRAMDESG-WS
+000000         MOVE FUNCTIONINDEX    OF COMS-IN TO FUNCTIONINDEX-WS
+000000         MOVE USERCODE         OF COMS-IN TO USERCODE-WS
+000000         MOVE SECURITYDESG     OF COMS-IN TO SECURITYDESG-WS
+000000         MOVE TIMESTAMP        OF COMS-IN TO TIMESTAMP-WS
+000000         MOVE STATION          OF COMS-IN TO STATION-WS
+000000         MOVE TEXTLENGTH       OF COMS-IN TO TEXTLENGTH-WS
+000000         MOVE STATUSVALUE      OF COMS-IN TO STATUSVALUE-WS
+000000         MOVE RESTART          OF COMS-IN TO RESTART-WS
+000000         MOVE AGENDA           OF COMS-IN TO AGENDA-WS
+000000         CALL   "TRATA_ERRO_SAIDA OF S0997/OBJ/LIBRARY/INSTALACAO"
+000000                 USING   ARRAY-IN-WS
+000000                         PROGRAMA-DESIGNATOR-77
+000000                         RESULTADO-77.
+000000/*FIM PROGRAMA
+000000     GO TO 003-INICIO-REL.
+000000
+000000*****************************************************************
+000000*                                                               *
+000000*           INICIO PROCESSAMENTO - RELATORIO MAC/MEX            *
+000000*                                                               *
+000000*****************************************************************
+000000
+000000 0200-ACESSO-USUARIOS-CLI.
+000000*  FIND PARA COMPARAR DATA DO SISTEMA COM USC-DATA-INI-SUBST
+000000       ACCEPT DATA-ACCEPT FROM DATE.
+000000       MOVE DIA-ACCEPT TO DIA-SISTEMA.
+000000       MOVE MES-ACCEPT TO MES-SISTEMA.
+000000       MOVE ANO-ACCEPT TO ANO-SISTEMA.
+000000       MOVE 20         TO SEC-SISTEMA.
+000000
+000000       FIND FIRST USC-POR-USUARIO AT
+000000          CLI-CODIGO = CLI-JANELA-SEG-WS AND
+000000          USU-CODIGO = USU-CODIGO OF SV-AREA-REL
+000000          ON EXCEPTION
+000000              IF DMSTATUS(NOTFOUND)
+000000                 MOVE "Usuario nao cadastrado" TO
+000000                 MENSAGEM OF SV-AREA-REL
+000000              ELSE
+000000                 PERFORM 10000-00-TRATA-ERRO-DMS
+000000                     THRU 10000-99-TRATA-ERRO-DMS.
+000000
+000000  0210-ACESSO-USUARIOS-CLI-FIM.
+000000      EXIT.
+000000
+000000  0300-BUSCA-TIPO-LOTACAO.
+000000**VERIFICA TIPO USUARIO E UNO-CODIGO
+000000   MOVE ZEROS TO LOT-CODIGO OF SV-AREA-REL.
+000000
+000000   IF USU-LETRA-WS = "C"
+000000      IF UNO-CODIGO-FIS OF USUARIO-CLI NOT EQUAL ZEROS
+000000        MOVE UNO-CODIGO-FIS OF USUARIO-CLI TO UNO-CODIGO-WS
+000000      ELSE
+000000        IF UNO-CODIGO-FIS OF USUARIO-CLI EQUAL ZEROS AND
+000000          DATA-SISTEMAR > USC-DATA-INI-SUBST OF USUARIO-CLI AND
+000000          DATA-SISTEMAR <= USC-DATA-FIM-SUBST OF USUARIO-CLI
+000000
+000000           MOVE UNO-CODIGO-SUB OF USUARIO-CLI TO UNO-CODIGO-WS
+000000           MOVE "S" TO FLAG-SUBFIS OF SV-AREA-REL
+000000           MOVE "SUB" TO TIPO-AREA OF SV-AREA-REL
+000000        ELSE
+000000           MOVE UNO-CODIGO-ORI OF USUARIO-CLI TO UNO-CODIGO-WS.
+000000           MOVE "ORI" TO TIPO-AREA OF SV-AREA-REL.
+000000
+000000**VERIFICA TIPO USUARIO E UNO-CODIGO
+000000
+000000**PROCURA LOT-CODIGO
+000000   FIND UNL-POR-UNO AT
+000000         CLI-CODIGO = CLI-JANELA-SEG-WS AND
+000000         UNO-CODIGO = UNO-CODIGO-WS
+000000         ON  EXCEPTION
+000000             IF  NOT DMSTATUS (NOTFOUND)
+000000                 PERFORM 10000-00-TRATA-ERRO-DMS
+000000                     THRU  10000-99-TRATA-ERRO-DMS
+000000    END-FIND.
+000000**PROCURA LOT-CODIGO
+000000
+000000**MOVE LOT-CODIGO
+000000    MOVE LOT-CODIGO OF UNO-LOTACAO
+000000      TO LOT-CODIGO OF SV-AREA-REL.
+000000**MOVE LOT-CODIGO
+000000
+000000  0310-BUSCA-TIPO-LOTACAO-FIM.
+000000  EXIT.
+000000
+000000  0400-BUSCA-TIPO-FUNCAO.
+000000
+000000    MOVE ZEROS TO TIF-CODIGO OF SV-AREA-REL.
+000000
+000000    MOVE USU-CODIGO OF SV-AREA-REL TO USU-CODIGO-WS.
+000000**VERIFICA TIPO USUARIO E UNO-CODIGO
+000000    IF USU-LETRA-WS = "C"
+000000       IF DATA-SISTEMAR > USC-DATA-INI-SUBST OF USUARIO-CLI AND
+000000            DATA-SISTEMAR <= USC-DATA-FIM-SUBST OF USUARIO-CLI
+000000
+000000             MOVE FCO-CODIGO-SUB OF USUARIO-CLI
+000000                                    TO COD-FUNCAO-AUX
+000000             MOVE USC-DATA-FIM-SUBST OF USUARIO-CLI
+000000                TO DATA-VALIDADE OF SV-AREA-REL
+000000       ELSE
+000000          MOVE FCO-CODIGO-ORI OF USUARIO-CLI TO COD-FUNCAO-AUX
+000000    ELSE
+000000       MOVE TIF-CODIGO OF USUARIO-CLI TO COD-FUNCAO-AUX.
+000000**VERIFICA TIPO USUARIO E UNO-CODIGO
+000000**PROCURA TIF-CODIGO
+000000    FIND FIRST FCO-POR-CODIGO AT
+000000           CLI-CODIGO   =  CLI-JANELA-SEG-WS AND
+000000           FCO-CODIGO   =  COD-FUNCAO-AUX
+000000           ON EXCEPTION
+000000              IF DMSTATUS (NOTFOUND)
+000000                 MOVE "Tipo de Funcao nao cadastrada."
+000000                   TO MENSAGEM OF SV-AREA-REL
+000000                 MOVE 1 TO RESULTADO-77
+000000              ELSE
+000000                 PERFORM 10000-00-TRATA-ERRO-DMS
+000000                    THRU 10000-99-TRATA-ERRO-DMS
+000000              END-IF
+000000      END-FIND.
+000000**PROCURA TIF-CODIGO
+000000**MOVE TIF-CODIGO
+000000      MOVE TIF-CODIGO OF FUNCAO
+000000         TO TIF-CODIGO OF SV-AREA-REL.
+000000**MOVE TIF-CODIGO
+000000  0410-BUSCA-TIPO-FUNCAO-FIM.
+000000  EXIT.
+000000
+000000****************************************************************
+000000*                                                              *
+000000*                        MONTAGEM MAC                          *
+000000*                                                              *
+000000****************************************************************
+000000
+000000  0500-ACESSO-MATRIZ-GRUPO.
+000000* PROCURAR MATRIZ PELA LOTACAO
+000000    FIND KEY OF NEXT MGR-POR-LOTAC AT
+000000         CLI-CODIGO = CLI-JANELA-SEG OF SV-AREA-REL AND
+000000         LOT-CODIGO = LOT-CODIGO  OF SV-AREA-REL    AND
+000000         TIF-CODIGO = TIF-CODIGO  OF SV-AREA-REL
+000000         ON EXCEPTION
+000000            IF DMSTATUS(NOTFOUND)
+000000               MOVE "Grupo nao cadastrado."
+000000                 TO MENSAGEM OF SV-AREA-REL
+000000               GO TO 0580-ACESSO-MATRIZ-GRUPO-FIM
+000000            ELSE
+000000               PERFORM 10000-00-TRATA-ERRO-DMS
+000000                  THRU 10000-99-TRATA-ERRO-DMS
+000000            END-IF
+000000    END-FIND.
+000000
+000000    IF SIS-CODIGO OF MATRIZ-GRUPO > ZEROS
+000000      GO TO 0520-MONTA-SISTEMA
+000000    END-IF.
+000000
+000000 0520-MONTA-SISTEMA.
+000000* PROCURA SISTEMA
+000000    IF CONT-ABRANG >= 40
+000000       MOVE "Limite da tabela de ABRANGENCIA excedido"
+000000         TO MENSAGEM OF SV-AREA-REL
+000000    END-IF
+000000
+000000    ADD 1 TO CONT-ABRANG.
+000000    MOVE CONT-ABRANG TO CONT-ABRANG OF SV-AREA-REL.
+000000
+000000    MOVE SPACES TO SIS-NOME OF SV-AREA-REL(CONT-ABRANG).
+000000
+000000    FIND FIRST SIS-POR-CODIGO AT
+000000          SIS-CODIGO = SIS-CODIGO OF MATRIZ-GRUPO
+000000           ON EXCEPTION
+000000              IF DMSTATUS(NOTFOUND)
+000000                 MOVE "Sistema nao cadastrado."
+000000                   TO MENSAGEM OF SV-AREA-REL
+000000              ELSE
+000000                 PERFORM 10000-00-TRATA-ERRO-DMS
+000000                    THRU 10000-99-TRATA-ERRO-DMS
+000000              END-IF
+000000     END-FIND.
+000000
+000000    IF SIS-CODIGO OF SISTEMAS > ZEROS
+000000         MOVE SIS-CODIGO OF SISTEMAS
+000000              TO SIS-CODIGO-ABG OF SV-AREA-REL(CONT-ABRANG).
+000000         MOVE SIS-NOME OF SISTEMAS
+000000               TO SIS-NOME OF SV-AREA-REL(CONT-ABRANG).
+000000
+000000     GO TO 0530-MONTA-COD-ABRANG.
+000000
+000000  0530-MONTA-COD-ABRANG.
+000000/*MONTAGEM DA ABRANGENCIA
+000000
+000000     FIND MAB-POR-LOT-TIF AT
+000000           CLI-CODIGO   = CLI-JANELA-SEG OF SV-AREA-REL AND
+000000           SIS-CODIGO   = SIS-CODIGO OF SISTEMAS        AND
+000000           LOT-CODIGO   = LOT-CODIGO OF SV-AREA-REL     AND
+000000           TIF-CODIGO   = TIF-CODIGO OF SV-AREA-REL
+000000           ON EXCEPTION
+000000              IF NOT DMSTATUS (NOTFOUND)
+000000                 PERFORM 10000-00-TRATA-ERRO-DMS
+000000                    THRU 10000-99-TRATA-ERRO-DMS
+000000              END-IF
+000000     END-FIND.
+000000
+000000     IF UCS-ABRANGENCIA OF MATRIZ-ABRANG NOT = ZEROS
+000000          MOVE UCS-ABRANGENCIA OF MATRIZ-ABRANG
+000000             TO UCS-ABRANGENCIA OF SV-AREA-REL(CONT-ABRANG)
+000000          GO TO 0540-MONTA-NOME-ABRANG.
+000000
+000000  0540-MONTA-NOME-ABRANG.
+000000
+000000    FIND FIRST TAG-POR-IDENT AT
+000000          TAG-CLIENTE  =  CLI-CODIGO  OF USUARIO-CLI      AND
+000000          TAG-SISTEMA  =  SIS-CODIGO  OF MATRIZ-GRUPO      AND
+000000          TAG-CODIGO   =  UCS-ABRANGENCIA OF MATRIZ-ABRANG
+000000           ON EXCEPTION
+000000              IF DMSTATUS (NOTFOUND)
+000000                 MOVE "Codigo abrangencia nao cadastrado"
+000000                   TO MENSAGEM OF SV-AREA-REL
+000000              ELSE
+000000                 PERFORM 10000-00-TRATA-ERRO-DMS
+000000                    THRU 10000-99-TRATA-ERRO-DMS
+000000              END-IF
+000000    END-FIND.
+000000    IF TAG-DESCRICAO OF TAB-ABRANGENCIA NOT = SPACES
+000000      MOVE TAG-DESCRICAO   OF TAB-ABRANGENCIA
+000000        TO ABR-DESCRICAO   OF SV-AREA-REL(CONT-ABRANG).
+000000
+000000     GO TO 0550-MONTA-GRUPOS.
+000000
+000000  0550-MONTA-GRUPOS.
+000000* MONTAGEM GRUPOS
+000000   MOVE ZEROS TO CONT-GRUPOS OF SV-AREA-REL.
+000000
+000000   SET GOP-POR-MNEMONICO TO BEGINNING.
+000000   GO TO 0560-COMPOR-GRUPOS.
+000000
+000000  0560-COMPOR-GRUPOS.
+000000
+000000      FIND NEXT GOP-POR-MNEMONICO AT
+000000          CFS-VER-SISEG = VERSAO-SEG-WS AND
+000000          GOP-CLIENTE   = CLI-JANELA-SEG-WS AND
+000000          GOP-SISTEMA   = SIS-CODIGO OF SISTEMAS
+000000          ON EXCEPTION
+000000             IF DMSTATUS (NOTFOUND)
+000000                  MOVE "Nao ha grupos cadastrados para este siste
+000000-                       "ma" TO MENSAGEM OF SV-AREA-REL
+000000             ELSE
+000000                PERFORM 10000-00-TRATA-ERRO-DMS
+000000                   THRU 10000-99-TRATA-ERRO-DMS
+000000             END-IF
+000000         GO TO 0570-MOVE-DADOS
+000000     END-FIND.
+000000
+000000  0570-MOVE-DADOS.
+000000
+000000     IF CONT-GRUPOS >= 300
+000000        MOVE "Limite da tabela de GRUPOS excedido"
+000000          TO MENSAGEM OF SV-AREA-REL
+000000     END-IF
+000000
+000000     ADD 1 TO CONT-GRUPOS.
+000000     MOVE CONT-GRUPOS TO CONT-GRUPOS OF SV-AREA-REL.
+000000
+000000     MOVE SIS-CODIGO OF SISTEMAS
+000000       TO SIS-CODIGO-GRP OF SV-AREA-REL(CONT-GRUPOS).
+000000     MOVE GOP-DESCRICAO OF GRUPOS-OPERACOES
+000000       TO GOP-DESCRICAO OF SV-AREA-REL(CONT-GRUPOS).
+000000     MOVE GOP-MNEMONICO OF GRUPOS-OPERACOES
+000000       TO GOP-MNEMONICO OF SV-AREA-REL(CONT-GRUPOS).
+000000
+000000
+000000*     GO TO 0500-ACESSO-MATRIZ-GRUPO.
+000000
+000000*     FIND KEY OF NEXT MGR-POR-LOTAC AT
+000000*         CLI-CODIGO = CLI-JANELA-SEG OF SV-AREA-REL AND
+000000*         LOT-CODIGO = LOT-CODIGO  OF SV-AREA-REL    AND
+000000*         TIF-CODIGO = TIF-CODIGO  OF SV-AREA-REL
+000000*         ON EXCEPTION
+000000*            IF DMSTATUS(NOTFOUND)
+000000*               GO TO 0580-ACESSO-MATRIZ-GRUPO-FIM
+000000*            ELSE
+000000*               PERFORM 10000-00-TRATA-ERRO-DMS
+000000*                  THRU 10000-99-TRATA-ERRO-DMS
+000000*            END-IF
+000000*    END-FIND.
+000000
+000000  0580-ACESSO-MATRIZ-GRUPO-FIM.
+000000  EXIT.
+000000
+000000  0600-00-MONTA-PERFIL.
+000000* MONTAGEM PERFIL
+000000     MOVE ZEROS TO CONT-PERFIL OF SV-AREA-REL.
+000000
+000000     SET PER-POR-IDENT TO BEGINNING.
+000000     GO TO 0610-COMPOR-PERFIL.
+000000
+000000 0610-COMPOR-PERFIL.
+000000
+000000     FIND NEXT PER-POR-IDENT AT
+000000          SIS-CODIGO    = SIS-CODIGO OF SISTEMAS
+000000          ON EXCEPTION
+000000             IF DMSTATUS (NOTFOUND)
+000000              GO TO 0630-FIM-ACESSO-MAC
+000000             ELSE
+000000                PERFORM 10000-00-TRATA-ERRO-DMS
+000000                   THRU 10000-99-TRATA-ERRO-DMS
+000000             END-IF
+000000         GO TO 0620-MOVE-DADOS
+000000     END-FIND.
+000000
+000000*     GO TO 0620-MOVE-DADOS.
+000000
+000000 0620-MOVE-DADOS.
+000000
+000000     IF CONT-PERFIL >= 100
+000000        MOVE "Limite da tabela de PERFIL excedido"
+000000          TO MENSAGEM OF SV-AREA-REL
+000000     END-IF.
+000000
+000000     ADD 1 TO CONT-PERFIL.
+000000
+000000     MOVE SIS-CODIGO OF SISTEMAS
+000000       TO SIS-CODIGO-PER OF SV-AREA-REL(CONT-PERFIL).
+000000     MOVE PER-DESCRICAO OF PERFIL
+000000       TO PER-DESCRICAO OF SV-AREA-REL(CONT-PERFIL).
+000000     MOVE PER-CODIGO    OF PERFIL
+000000       TO PER-CODIGO    OF SV-AREA-REL(CONT-PERFIL).
+000000
+000000*     GO TO 0610-COMPOR-PERFIL.
+000000*     FIND NEXT PER-POR-IDENT AT
+000000*          SIS-CODIGO    = SIS-CODIGO OF SISTEMAS
+000000*          ON EXCEPTION
+000000*             IF DMSTATUS (NOTFOUND)
+000000*                GO TO 0630-FIM-ACESSO-MAC
+000000*             ELSE
+000000*                PERFORM 10000-00-TRATA-ERRO-DMS
+000000*                   THRU 10000-99-TRATA-ERRO-DMS
+000000*             END-IF
+000000*
+000000*     END-FIND.
+000000
+000000*     GO TO 0620-MOVE-DADOS.
+000000
+000000  0630-FIM-ACESSO-MAC.
+000000  EXIT.
+000000****************************************************************
+000000*                                                              *
+000000*                        MONTAGEM MEX                          *
+000000*                                                              *
+000000****************************************************************
+000000  0700-MONTA-MEX.
+000000
+000000
+000000     MOVE USC-SEC-FIM-EXC OF USUARIO-CLI
+000000                          TO SEC-VALIDADE OF SV-AREA-REL.
+000000     MOVE USC-ANO-FIM-EXC OF USUARIO-CLI
+000000                          TO ANO-VALIDADE OF SV-AREA-REL.
+000000     MOVE USC-MES-FIM-EXC OF USUARIO-CLI
+000000                          TO MES-VALIDADE OF SV-AREA-REL.
+000000     MOVE USC-DIA-FIM-EXC OF USUARIO-CLI
+000000                          TO DIA-VALIDADE OF SV-AREA-REL.
+000000
+000000     GO TO 0710-MONTA-GRUPOS.
+000000
+000000   0710-MONTA-GRUPOS.
+000000** MONTAGEM GRUPO MAX
+000000     MOVE ZEROS TO CONT-GRUPOS OF SV-AREA-REL.
+000000
+000000     SET GOP-POR-MNEMONICO TO BEGINNING.
+000000
+000000     FIND NEXT GOP-POR-MNEMONICO AT
+000000       CFS-VER-SISEG = VERSAO-SEG-WS AND
+000000       GOP-CLIENTE   = CLI-JANELA-SEG OF SV-AREA-REL AND
+000000       GOP-SISTEMA   = SIS-CODIGO OF SISTEMAS
+000000       ON EXCEPTION
+000000        IF DMSTATUS (NOTFOUND)
+000000           IF CONT-GRUPOS = ZEROS
+000000             MOVE "Nao ha grupos cadastrados para este siste
+000000-                 "ma" TO MENSAGEM OF SV-AREA-REL
+000000           END-IF
+000000        ELSE
+000000           PERFORM 10000-00-TRATA-ERRO-DMS
+000000              THRU 10000-99-TRATA-ERRO-DMS
+000000       END-IF
+000000       GO TO 0710-10-MONTA-EXCESSAO
+000000     END-FIND.
+000000
+000000   0710-10-MONTA-EXCESSAO.
+000000
+000000    FIND GRX-POR-USU AT
+000000         CLI-CODIGO = CLI-JANELA-SEG-WS               AND
+000000         SIS-CODIGO = SIS-CODIGO OF SISTEMAS          AND
+000000         USU-CODIGO = USU-CODIGO OF SV-AREA-REL       AND
+000000         GOP-CODIGO = GOP-CODIGO OF GRUPOS-OPERACOES
+000000         ON EXCEPTION
+000000            IF NOT DMSTATUS(NOTFOUND)
+000000               PERFORM 10000-00-TRATA-ERRO-DMS
+000000                  THRU 10000-99-TRATA-ERRO-DMS
+000000*               GO TO 1500-99-ATU-GRUPOS
+000000            END-IF
+000000    END-FIND.
+000000
+000000    GO TO 0720-MOVE-DADOS.
+000000
+000000   0720-MOVE-DADOS.
+000000
+000000     IF CONT-GRUPOS >= 300
+000000        MOVE "Limite da tabela de grupos excedido"
+000000          TO MENSAGEM OF SV-AREA-REL
+000000*        GO TO 1300-99-MONTA-GRUPOS
+000000     END-IF
+000000
+000000     ADD 1 TO CONT-GRUPOS.
+000000     MOVE CONT-GRUPOS TO CONT-GRUPOS OF SV-AREA-REL.
+000000
+000000     MOVE SIS-CODIGO OF SISTEMAS
+000000       TO SIS-CODIGO-GRP OF SV-AREA-REL(CONT-GRUPOS).
+000000     MOVE GOP-DESCRICAO OF GRUPOS-OPERACOES
+000000       TO GOP-DESCRICAO OF SV-AREA-REL(CONT-GRUPOS).
+000000     MOVE GOP-MNEMONICO OF GRUPOS-OPERACOES
+000000       TO GOP-MNEMONICO OF SV-AREA-REL(CONT-GRUPOS).
+000000
+000000  0720-10-ACESSO-MEX-GRUPO-FIM.
+000000  EXIT.
+000000
+000000  0730-MONTA-PERFIL.
+000000* MONTAGEM PERFIL MEX
+000000     MOVE ZEROS TO CONT-PERFIL OF SV-AREA-REL.
+000000
+000000     SET PER-POR-IDENT TO BEGINNING.
+000000
+000000     FIND NEXT PER-POR-IDENT AT
+000000       SIS-CODIGO = SIS-CODIGO OF SISTEMAS
+000000          ON EXCEPTION
+000000             IF NOT DMSTATUS (NOTFOUND)
+000000                PERFORM 10000-00-TRATA-ERRO-DMS
+000000                   THRU 10000-99-TRATA-ERRO-DMS
+000000             END-IF
+000000             GO TO 0740-COMPOR-PERFIL
+000000     END-FIND.
+000000
+000000   0740-COMPOR-PERFIL.
+000000
+000000     FIND NEXT PRX-POR-USU-PER AT
+000000        CLI-CODIGO = CLI-JANELA-SEG-WS      AND
+000000        SIS-CODIGO = SIS-CODIGO OF SISTEMAS AND
+000000        USU-CODIGO = USU-CODIGO OF SV-AREA-REL AND
+000000        PER-CODIGO = PER-CODIGO OF PERFIL
+000000        ON EXCEPTION
+000000          IF NOT DMSTATUS(NOTFOUND)
+000000             PERFORM 10000-00-TRATA-ERRO-DMS
+000000                THRU 10000-99-TRATA-ERRO-DMS
+000000          END-IF
+000000        GO TO 0750-MOVE-DADOS
+000000     END-FIND.
+000000
+000000 0750-MOVE-DADOS.
+000000
+000000     IF CONT-PERFIL >= 200
+000000        MOVE "Limite da tabela de perfil excedido"
+000000          TO MENSAGEM OF SV-AREA-REL
+000000*        MOVE 1 TO RESULTADO-77
+000000        GO TO 0730-MONTA-PERFIL
+000000     END-IF.
+000000
+000000     ADD 1 TO CONT-PERFIL
+000000     MOVE CONT-PERFIL TO CONT-PERFIL OF SV-AREA-REL.
+000000
+000000     MOVE PER-DESCRICAO OF PERFIL
+000000       TO PER-DESCRICAO OF SV-AREA-REL(CONT-PERFIL).
+000000     MOVE PER-CODIGO    OF PERFIL
+000000       TO PER-CODIGO    OF SV-AREA-REL(CONT-PERFIL).
+000000
+000000  0830-FIM-ACESSO-MEX.
+000000    EXIT.
+000000
+000000*---
+000000
+000000 10000-00-TRATA-ERRO-DMS.
+000000*ERRO BANDO DE DADOS
+000000     MOVE    DMSTATUS (DMRESULT) TO  DMS-RESULT-WS.
+000000     MOVE FORM-KEY-IN      OF COMS-IN TO FORM-KEY-WS
+000000     MOVE SDFINFO          OF COMS-IN TO SDFINFO-WS
+000000     MOVE PROGRAMDESG      OF COMS-IN TO PROGRAMDESG-WS
+000000     MOVE FUNCTIONINDEX    OF COMS-IN TO FUNCTIONINDEX-WS
+000000     MOVE USERCODE         OF COMS-IN TO USERCODE-WS
+000000     MOVE SECURITYDESG     OF COMS-IN TO SECURITYDESG-WS
+000000     MOVE TIMESTAMP        OF COMS-IN TO TIMESTAMP-WS
+000000     MOVE STATION          OF COMS-IN TO STATION-WS
+000000     MOVE TEXTLENGTH       OF COMS-IN TO TEXTLENGTH-WS
+000000     MOVE STATUSVALUE      OF COMS-IN TO STATUSVALUE-WS
+000000     MOVE RESTART          OF COMS-IN TO RESTART-WS
+000000     MOVE AGENDA           OF COMS-IN TO AGENDA-WS
+000000
+000000     CALL "TRATA_EXCECAO_DMS OF S0997/OBJ/LIBRARY/INSTALACAO"
+000000          USING   DMS-PARAMETROS-WS
+000000                  ARRAY-IN-WS
+000000          GIVING  RESULTADO-77.
+000000
+000000     IF  DMS-ENCERRAR
+000000         STOP    RUN.
+000000
+000000     IF  DMS-ATIVAR-DMTERMINATE
+000000         CALL    SYSTEM  DMTERMINATE.
+000000
+000000     MOVE "Erro no acesso ao banco de dados."
+000000       TO MENSAGEM OF SV-AREA-REL.
+000000
+000000     MOVE 1 TO RESULTADO-77.
+000000
+000000 10000-99-TRATA-ERRO-DMS.
+000000     EXIT.
+000000
+000000 99900-00-ULTIMO-PARAGRAFO.
+000000      CLOSE BDSEGURANCA.
+000000      STOP RUN.
+000000
+000000 END-OF-JOB.
+000000
+000000
