@@ -1,0 +1,410 @@
+PARA ACESSAR A MAC
+
+TIPO DE FUNCAO
+1. Verificar se o usuario é usuário CAIXA
+
+2. Se for "C", acessar DS-USUARIOS-CLI pelo set 
+	2.1 Verificar se a data do sistema for maior que USC-DATA-INI-SUBST e menor ou igual USC-DATA-FIM-SUBST
+	2.2 PARA BUSCAR O TIPO DE FUNÇÃO -> Se estiver como substituto, usar FCO-CODIGO-SUB, senao FCO-CODIGO-ORI e jogar numa variavel aux(TIPO-FUNCAO-AUX)
+	2.3 Acessar DS-TIPO-FUNCAO pelo set SSTIF-CODIGO SUBSET KEYS CLI-CODIGO)pegar de ds-usuarios-cli), TIF-CODIGO = TIPO-FUNCAO-AUX
+	g
+3. Se não for usuario "C", usar TIF-CODIGO		
+
+TIPO DE LOTAÇÃO
+1. Verificar se o usuario é usuario CAIXA
+
+2. Se for "C", verificar se UNO-CODIGO-FIS está preenchido, se estiver usar ela. 
+	2.1 PARA BUSCAR O TIPO DE LOTAÇÃO -> Acessar DS-TIPO-LOTACAO pelo set SSUNL-UNO SUBSET KEYS CLI-CODIGO(pegar de ds-usuarios-cli), UNO-CODIGO = UNO-CODIGO-FIS
+	2.2 Se UNO-CODIGO-FIS não estiver preenchido, verificar se a data do sistema for maior que USC-DATA-INI-SUBST e menor ou igual USC-DATA-FIM-SUBST
+		2.1.1 -> Ai usar a substituta Acessar DS-TIPO-LOTACAO pelo set CLI-CODIGO(pegar de ds-usuarios-cli), UNO-CODIGO = UNO-CODIGO-SUB
+	2.3 Se nao for fisica nem substituta, Acessar DS-TIPO-LOTACAO pelo set CLI-CODIGO(pegar de ds-usuarios-cli), UNO-CODIGO = UNO-CODIGO-ORI 
+	
+3. Se não for "C", usar SEMPRE UNO-CODIGO-ORI 	
+	3.1 PARA BUSCAR O TIPO DE LOTAÇÃO -> Acessar DS-TIPO-LOTACAO pelo set SSUNL-UNO SUBSET KEYS CLI-CODIGO(pegar de ds-usuarios-cli), UNO-CODIGO = UNO-CODIGO-ORI
+	
+
+ACESSAR A MAC
+
+1. Acessar com FIND KEY OF MGR-POR-LOTAC 
+	DS-MATRIZ-GRUPO pelo set SSMGR-LOTAC SUBSET KEYS CLI-CODIGO(pegar de ds-usuarios-cli), LOT-CODIGO = LOT-CODIGO OF TIPO-LOTACAO , TIF-CODIGO OF TIPO-FUNCAO
+ 
+***Irá gerar um alerta de linear search na compilação referente à lida completa da tabela 
+
+2. Para buscar nome Sistema
+	Acessar DS-SISTEMAS pelo set STSIS-CODIGO KEY SIS-CODIGO(ds-matriz-grupo)  
+
+3. Para buscar Abrangencia 
+	CodAbrangencia -> Acessar DS-MATRIZ-ABRANG pelo set SSMAB-LOT-TIF SUBSET KEYS CLI-CODIGO(ds-usuarios-cli), SIS-CODIGO(ds-matriz-grupo), LOT-CODIGO(tipo-lotacao), TIF-CODIGO(tipo-funcao)                               
+    NomeAbrangencia -> Acessar DS-TAB-ABRANG pelo set STTAG-IDENT KEY TAG-IDENTIFICACAO(TAG-CLIENTE = ds-usuarios-cli),(TAG-SISTEMA = ds-matriz-grupo),(TAG-CODIGO = ds-matriz-abrang) 
+					   TAG-DESCRICAO ALPHA (40)
+
+
+-------------------------------------------------------------
+PERMISSOES DA MEX:
+
+INICIO E FIM DA VALIDADE DA MEX SE DATA ATUAL ENTRE INI/FIM
+USC-DATA-INI-EXC GROUP       
+  USC-SEC-INI-EXC NUMBER (2) 
+  USC-ANO-INI-EXC NUMBER (2) 
+  USC-MES-INI-EXC NUMBER (2) 
+  USC-DIA-INI-EXC NUMBER (2) 
+USC-DATA-FIM-EXC GROUP       
+  USC-SEC-FIM-EXC NUMBER (2) 
+  USC-ANO-FIM-EXC NUMBER (2) 
+  USC-MES-FIM-EXC NUMBER (2) 
+  USC-DIA-FIM-EXC NUMBER (2)
+
+A)- GRUPOS:
+
+DS-GRUPO-EXC-USU:
+
+SSGRX-USU SUBSET KEYS 
+1)- CHAVE: CLI-CODIGO (CLIENTE DA JANELA)
+
+2)- FILTRO: PELO USU-CODIGO (IGNORA OS DEMAIS)
+
+3)- CONTEUDO: GOP-CODIGO DO SIS-CODIGO 
+
+DS-OPER-GRUPOS:
+
+STOPG-GRUPO KEYS 
+CFS-VER-SISEG = 0
+GOP-CLIENTE (JANELA)
+GOP-SISTEMA 
+GOP-CODIGO
+
+ACHA O NOME DO GRUPO.
+
+
+B)- PERFIS
+
+DS-PERFIL-EXC-USU: SIMULAR AO GRUPO, MAS COM PER-CODIGO.
+
+DS-PERFIL:
+
+      SIS-CODIGO NUMBER (4)           
+      PER-CODIGO NUMBER (5)           
+    PER-DESCRICAO ALPHA (40)          
+
+
+
+
+
+
+******************************************************
+*                 MONTAGEM MEX  **********************
+******************************************************
+
+1200-00-MONTA-DESCRICOES.
+
+ 1200-20-MONTA-USUARIO.
+
+     FIND FIRST USU-POR-CODIGO AT
+          USU-CODIGO = USU-CODIGO OF SV-AREA-REL
+          ON EXCEPTION
+             IF DMSTATUS(NOTFOUND)
+                MOVE "Usuario nao cadastrado."
+                  TO MENSAGEM OF SV-MATRIZ-EXCECAO
+                MOVE 1 TO RESULTADO-77
+                MOVE SPACES TO USU-NOME OF SV-MATRIZ-EXCECAO
+             ELSE
+                PERFORM 10000-00-TRATA-ERRO-DMS
+                   THRU 10000-99-TRATA-ERRO-DMS
+             END-IF
+             GO TO 1200-99-MONTA-DESCRICOES
+     END-FIND.
+
+ 1200-25-CONSISTE-USUARIO-CLI.
+
+     FIND FIRST USC-POR-USUARIO
+       AT CLI-CODIGO = CLI-JANELA-SEG-WS
+      AND USU-CODIGO = USU-CODIGO OF SV-AREA-REL
+          ON EXCEPTION
+             IF DMSTATUS(NOTFOUND)
+                MOVE "Este usuario nao e controlado pela Matriz de
+-                    " Acesso."
+                  TO MENSAGEM OF SV-MATRIZ-EXCECAO
+                MOVE 1 TO RESULTADO-77
+             ELSE
+                PERFORM 10000-00-TRATA-ERRO-DMS
+                   THRU 10000-99-TRATA-ERRO-DMS
+             END-IF
+             GO TO 1200-99-MONTA-DESCRICOES
+     END-FIND.
+
+     MOVE USC-SEC-INI-EXC OF USUARIO-CLI TO WS-SEC-EXC.
+     MOVE USC-ANO-INI-EXC OF USUARIO-CLI TO WS-ANO-EXC.
+     MOVE USC-MES-INI-EXC OF USUARIO-CLI TO WS-MES-EXC.
+     MOVE USC-DIA-INI-EXC OF USUARIO-CLI TO WS-DIA-EXC.
+
+ 1200-30-MONTA-SISTEMA.
+
+     MOVE SPACES TO SIS-NOME OF SV-AREA-REL.
+
+     FIND FIRST SIS-POR-CODIGO AT
+          SIS-CODIGO = SIS-CODIGO OF SV-AREA-REL
+          ON EXCEPTION
+             IF DMSTATUS(NOTFOUND)
+                MOVE "Sistema nao cadastrado."
+                  TO MENSAGEM OF SV-AREA-REL
+                MOVE 1 TO RESULTADO-77
+                MOVE SPACES TO SIS-NOME OF SV-MATRIZ-EXCECAO
+             ELSE
+                PERFORM 10000-00-TRATA-ERRO-DMS
+                   THRU 10000-99-TRATA-ERRO-DMS
+             END-IF
+             GO TO 1200-99-MONTA-DESCRICOES
+     END-FIND.
+
+     MOVE SIS-NOME OF SISTEMAS
+       TO SIS-NOME OF SV-MATRIZ-EXCECAO.
+
+ 1200-99-MONTA-DESCRICOES.
+     EXIT.
+
+ 1100-VERIFICA-GRUPOS-INI.
+
+     MOVE 1 TO CONT-GRUPOS.
+
+ 1100-10-BUSCA-GRUPOS.
+
+     IF GOP-MNEMONICO OF
+       SV-MATRIZ-EXCECAO(CONT-GRUPOS) NOT = SPACES
+        FIND GOP-POR-MNEMONICO AT
+             CFS-VER-SISEG = VERSAO-SEG-WS AND
+             GOP-CLIENTE   = CLI-JANELA-SEG-WS AND
+             GOP-SISTEMA   = SIS-CODIGO OF SV-AREA-REL AND
+             GOP-MNEMONICO =
+             GOP-MNEMONICO OF SV-AREA-REL(CONT-GRUPOS)
+             ON EXCEPTION
+                IF DMSTATUS(NOTFOUND)
+                   MOVE 1 TO RESULTADO-77
+                   GO TO 1100-VERIFICA-GRUPOS-FIM
+                ELSE
+                   PERFORM 10000-00-TRATA-ERRO-DMS
+                      THRU 10000-99-TRATA-ERRO-DMS
+                END-IF
+        END-FIND
+
+        IF CONT-GRUPOS < 300
+           ADD 1 TO CONT-GRUPOS
+           GO TO 1100-10-BUSCA-GRUPOS
+        ELSE
+           GO TO 1100-VERIFICA-GRUPOS-FIM
+        END-IF
+
+     ELSE
+        IF CONT-GRUPOS < 300
+           ADD 1 TO CONT-GRUPOS
+           GO TO 1100-10-BUSCA-GRUPOS
+        ELSE
+           GO TO 1100-VERIFICA-GRUPOS-FIM
+        END-IF
+     END-IF.
+
+ 1100-VERIFICA-GRUPOS-FIM.
+      EXIT.
+
+ 1100-VERIFICA-PERFIS-INI.
+
+     MOVE 1 TO 77-INDGRU.
+
+ 1100-10-BUSCA-PERFIS.
+
+     IF PER-CODIGO OF SV-AREA-REL(CONT-PERFIL) NOT = SPACES
+        FIND PER-POR-IDENT AT
+             SIS-CODIGO = SIS-CODIGO OF SV-AREA-REL AND
+             PER-CODIGO =
+             PER-CODIGO OF SV-AREA-REL(CONT-PERFIL)
+             ON EXCEPTION
+                IF DMSTATUS(NOTFOUND)
+                   MOVE 1 TO RESULTADO-77
+                   GO TO 1100-VERIFICA-PERFIS-FIM
+                ELSE
+                   PERFORM 10000-00-TRATA-ERRO-DMS
+                      THRU 10000-99-TRATA-ERRO-DMS
+                END-IF
+        END-FIND
+
+        IF CONT-PERFIL < 200
+           ADD 1 TO CONT-PERFIL
+           GO TO 1100-10-BUSCA-PERFIS
+        ELSE
+           GO TO 1100-VERIFICA-PERFIS-FIM
+        END-IF
+
+     ELSE
+        ADD 1 TO 77-INDGRU
+        GO TO 1100-10-BUSCA-PERFIS.
+
+ 1100-VERIFICA-PERFIS-FIM. EXIT.
+
+
+******************************************************************
+*                                                                *
+*         VERIFICACAO SE AS EXCECOES PERDERAM VALIDADE           *
+*                                                                *
+******************************************************************
+
+ 1100-VERIFICA-VALIDADE-INI.
+
+     MOVE SPACES TO MENSAGEM-VENC.
+     ACCEPT DATA-WS FROM DATE YYYYMMDD.
+
+     IF DATA-FIM-VIG OF SV-MATRIZ-EXCECAO > DATA-WS
+        MOVE "AS EXCECOES DESSE USUARIO EXPIRARAM."
+          TO MENSAGEM-VENC OF SV-MATRIZ-EXCECAO.
+
+ 1100-VERIFICA-VALIDADE-FIM. EXIT.
+
+
+******************************************************************
+*                                                                *
+*  MONTAGEM DA TABELA DE GRUPOS DA ACAO DE CONSULTA A MATRIZ     *
+*                                                                *
+******************************************************************
+
+ 1300-00-MONTA-GRUPOS.
+
+     MOVE ZEROS TO 77-INDGRU TOT-OCOR-GRUPOS OF SV-MATRIZ-EXCECAO.
+
+     SET GOP-POR-MNEMONICO TO BEGINNING.
+
+ 1300-10-COMPOR-GRUPOS.
+
+     FIND NEXT GOP-POR-MNEMONICO AT
+          CFS-VER-SISEG = VERSAO-SEG-WS AND
+          GOP-CLIENTE   = CLI-JANELA-SEG-WS AND
+          GOP-SISTEMA   = SIS-CODIGO OF SV-MATRIZ-EXCECAO
+          ON EXCEPTION
+             IF DMSTATUS (NOTFOUND)
+                IF 77-INDGRU = ZEROS
+                   MOVE "Nao ha grupos cadastrados para este siste
+-                       "ma" TO MENSAGEM OF SV-MATRIZ-EXCECAO
+                   MOVE 1 TO RESULTADO-77
+                END-IF
+             ELSE
+                PERFORM 10000-00-TRATA-ERRO-DMS
+                   THRU 10000-99-TRATA-ERRO-DMS
+             END-IF
+             GO TO 1300-99-MONTA-GRUPOS
+     END-FIND.
+
+ 1300-20-MOVE-DADOS.
+
+     IF 77-INDGRU >= 300
+        MOVE "Limite da tabela de grupos excedido"
+          TO MENSAGEM OF SV-MATRIZ-EXCECAO
+        MOVE 1 TO RESULTADO-77
+        GO TO 1300-99-MONTA-GRUPOS
+     END-IF
+
+     ADD 1 TO 77-INDGRU.
+     MOVE 77-INDGRU TO TOT-OCOR-GRUPOS OF SV-MATRIZ-EXCECAO.
+
+     MOVE GOP-DESCRICAO OF GRUPOS-OPERACOES
+       TO GOP-DESCRICAO OF SV-MATRIZ-EXCECAO(77-INDGRU).
+     MOVE GOP-CODIGO    OF GRUPOS-OPERACOES
+       TO GOP-CODIGO    OF TAB-GRUPOS(77-INDGRU).
+     MOVE GOP-MNEMONICO OF GRUPOS-OPERACOES
+       TO GOP-MNEMONICO OF TAB-GRUPOS(77-INDGRU).
+  1300-99-MONTA-GRUPOS.
+     EXIT.
+
+ 1400-00-MONTA-PERFIL.
+
+     MOVE ZEROS TO 77-INDGRU TOT-OCOR-PERFIL OF SV-MATRIZ-EXCECAO.
+
+     SET PER-POR-IDENT TO BEGINNING.
+
+ 1400-10-COMPOR-PERFIL.
+
+     FIND NEXT PER-POR-IDENT AT
+          SIS-CODIGO = SIS-CODIGO OF SV-MATRIZ-EXCECAO
+          ON EXCEPTION
+             IF NOT DMSTATUS (NOTFOUND)
+                PERFORM 10000-00-TRATA-ERRO-DMS
+                   THRU 10000-99-TRATA-ERRO-DMS
+             END-IF
+             GO TO 1400-99-MONTA-PERFIL
+     END-FIND.
+
+ 1400-10-MOVE-DADOS.
+
+     IF 77-INDGRU >= 200
+        MOVE "Limite da tabela de perfil excedido"
+          TO MENSAGEM OF SV-MATRIZ-EXCECAO
+        MOVE 1 TO RESULTADO-77
+        GO TO 1400-99-MONTA-PERFIL
+     END-IF.
+
+     ADD 1 TO 77-INDGRU.
+     MOVE 77-INDGRU TO TOT-OCOR-PERFIL OF SV-MATRIZ-EXCECAO.
+
+     MOVE PER-DESCRICAO OF PERFIL
+       TO PER-DESCRICAO OF SV-MATRIZ-EXCECAO(77-INDGRU).
+     MOVE PER-CODIGO    OF PERFIL
+       TO PER-CODIGO    OF SV-MATRIZ-EXCECAO(77-INDGRU).
+
+ 1400-30-PESQUISA-MATRIZ.
+
+     FIND PRX-PER-USU AT
+          CLI-CODIGO = GOP-CLIENTE OF GRUPOS-OPERACOES AND
+          SIS-CODIGO = GOP-SISTEMA OF GRUPOS-OPERACOES AND
+          PER-CODIGO = PER-CODIGO  OF PERFIL AND
+          USU-CODIGO = USU-CODIGO  OF SV-MATRIZ-EXCECAO
+          ON EXCEPTION
+             IF NOT DMSTATUS(NOTFOUND)
+                PERFORM 10000-00-TRATA-ERRO-DMS
+                   THRU 10000-99-TRATA-ERRO-DMS
+                GO TO 1400-99-MONTA-PERFIL
+             END-IF
+     END-FIND.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

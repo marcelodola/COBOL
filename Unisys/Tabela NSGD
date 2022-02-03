@@ -1,0 +1,47 @@
+  DS-SIDEC-CTA-NSGD DATA SET                                                 
+  ITEMS:                                                                     
+    SCN-UNO-SIDEC NUMBER (5)                                                 
+    SCN-CONTA-SIDEC NUMBER (12)                                              
+    SCN-UNO-NSGD NUMBER (5)                                                  
+    SCN-PRD-NSGD NUMBER (4)                                                  
+    SCN-CONTA-NSGD NUMBER (12)                                               
+    SCN-DIGITO-NSGD NUMBER (1)                                               
+    SCN-ORI-CTA-SIDEC NUMBER (2)                                             
+    SCN-CHAVE-TAB ALPHA (80)                                                 
+    SCN-DATA-INCLUSAO GROUP                                                  
+      SCN-SEC-INCLUSAO NUMBER (2)                                            
+      SCN-ANO-INCLUSAO NUMBER (2)                                            
+      SCN-MES-INCLUSAO NUMBER (2)                                            
+      SCN-DIA-INCLUSAO NUMBER (2)                                            
+    SCN-HORA-INCLUSAO GROUP                                                  
+      SCN-HH-INCLUSAO NUMBER (2)                                             
+      SCN-MM-INCLUSAO NUMBER (2)                                             
+      SCN-SS-INCLUSAO NUMBER (2)                                             
+    SCN-DATA-MIGRACAO GROUP                                                  
+      SCN-SEC-MIGRACAO NUMBER (2)                                            
+      SCN-ANO-MIGRACAO NUMBER (2)                                            
+      SCN-MES-MIGRACAO NUMBER (2)                                            
+      SCN-DIA-MIGRACAO NUMBER (2)                                            
+    SCN-HORA-MIGRACAO GROUP                                                  
+      SCN-HH-MIGRACAO NUMBER (2)                                             
+      SCN-MM-MIGRACAO NUMBER (2)                                             
+      SCN-SS-MIGRACAO NUMBER (2)                                             
+    SCN-COD-TABELA ALPHA (3)                                                 
+    SCN-SIGLA-BANCO ALPHA (3)                                                
+    ADM-CODIGO NUMBER (4)                                                    
+    CRE-CODIGO NUMBER (4)                                                    
+    CON-IDENTIFICACAO NUMBER (12)                                            
+  SETS:                                                                      
+    STSCN-CTA-SIDEC KEYS SCN-UNO-SIDEC, SCN-CONTA-SIDEC, SCN-ORI-CTA-SIDEC,  
+                          SCN-CHAVE-TAB, SCN-COD-TABELA                      
+                    DATA SCN-CONTA-NSGD, SCN-PRD-NSGD                        
+    SSSCN-CTA-NSGD SUBSET KEYS SCN-CONTA-NSGD, SCN-PRD-NSGD,                 
+                                SCN-ORI-CTA-SIDEC, SCN-CHAVE-TAB,            
+                                SCN-COD-TABELA                               
+                          DATA SCN-UNO-SIDEC, SCN-CONTA-SIDEC                
+    SSSCN-IDENT SUBSET KEYS CON-IDENTIFICACAO, ADM-CODIGO, CRE-CODIGO,       
+                             SCN-COD-TABELA, SCN-CHAVE-TAB, SCN-UNO-SIDEC,   
+                             SCN-CONTA-SIDEC, SCN-ORI-CTA-SIDEC              
+    STSCN-DATA-INC SUBSET KEYS SCN-DATA-INCLUSAO, SCN-HORA-INCLUSAO,         
+                                SCN-COD-TABELA, SCN-CHAVE-TAB, SCN-UNO-SIDEC,
+                                SCN-CONTA-SIDEC, SCN-ORI-CTA-SIDEC           
