@@ -239,9 +239,9 @@
 000000     03 DATA-VENCIMENTO               PIC  X(08).
 000000*
 000000 01  WS-DATABASE                      PIC  X(20) VARYING.
-000000 01  WS-PREP                          PIC  X(2000) VALUE SPACES.
-000000 01  WS-PREP-UP                       PIC  X(2000) VALUE SPACES.
-000000 01  WS-PREP-INS                      PIC  X(2000) VALUE SPACES.
+000000 01  WS-PREP                          PIC  X(4000) VALUE SPACES.
+000000 01  WS-PREP-UP                       PIC  X(4000) VALUE SPACES.
+000000 01  WS-PREP-INS                      PIC  X(4000) VALUE SPACES.
 000000*
 000000     EXEC SQL
 000000          END DECLARE SECTION
@@ -687,7 +687,7 @@
 000000*
 000000 R888-TRATA-SQLCODE.
 000000*
-000000     IF SQLCODE    NOT = +0 AND +100
+000000     IF SQLCODE  NOT = +0 AND +100
 000000        MOVE 'ERR   '       TO WS-RESULT
 000000        MOVE SQLCODE        TO WS-SQLCODE-EDT
 000000*
@@ -723,22 +723,32 @@
 000000     MOVE SPACES            TO WS-PREP-UP.
 000000     MOVE SPACES            TO WS-PREP-INS.
 000000*
-000000     STRING 'INSERT INTO transacoesvision.t_transacoes'
-000000-    ' (codigo_business_unit, numero_cartao, numero_conta,'
-000000-    ' codigo_autorizacao, codigo_transacao, data_efetivacao,'
-000000-    ' data_postagem, ind_dda, dias_extrato, mcc, modo_entrada,'
-000000-    ' modulo_logico, estabelecimento, id_estabelecimento,'
-000000-    ' num_registro, plano_credito, referencia,'
-000000-    ' cod_referencia_arn, status_arquivo, status_transacao,'
-000000-    ' tipo_transacao, situacao_transacao, valor_total_compra,'
-000000-    ' valor_transacao, data_modificacao, data_criacao,'
-000000-    ' parcela_atual, total_parcelas, numero_banknet,'
-000000-    ' identificador_origem_vp, modo_entrada_autorizacao,'
-000000-    ' valor_transacao_moeda_original, moeda_original,'
-000000-    ' cotacao_dolar_autorizacao, cotacao_dolar_clearing,'
-000000-    ' horatransacao, localidade, data_vencimento,'
-000000-    ' valor_transacao_dolar_autorizacao,'
-000000-    ' valor_transacao_dolar_clearing) VALUES ('
+000000     STRING 'PREPARE transacoes (text,text,text,text,text,date,' 
+000000     'date,text,numeric,numeric,text,text,text,text,'
+000000     'numeric,numeric,text,text,text,text,text,text,'
+000000     'numeric,numeric,date,date,numeric,numeric,text,'
+000000     'text,text,numeric,numeric,numeric,numeric,numeric,'
+000000     'text,date,numeric,numeric) AS 
+000000     'INSERT INTO transacoesvision.t_transacoes'
+000000-    '(codigo_business_unit, numero_cartao, numero_conta,'
+000000-    'codigo_autorizacao, codigo_transacao, data_efetivacao,'
+000000-    'data_postagem, ind_dda, dias_extrato, mcc, modo_entrada,'
+000000-    'modulo_logico, estabelecimento, id_estabelecimento,'
+000000-    'num_registro, plano_credito, referencia,'
+000000-    'cod_referencia_arn, status_arquivo, status_transacao,'
+000000-    'tipo_transacao, situacao_transacao, valor_total_compra,'
+000000-    'valor_transacao, data_modificacao, data_criacao,'
+000000-    'parcela_atual, total_parcelas, numero_banknet,'
+000000-    'identificador_origem_vp, modo_entrada_autorizacao,'
+000000-    'valor_transacao_moeda_original, moeda_original,'
+000000-    'cotacao_dolar_autorizacao, cotacao_dolar_clearing,'
+000000-    'horatransacao, localidade, data_vencimento,'
+000000-    'valor_transacao_dolar_autorizacao,'
+000000-    'valor_transacao_dolar_clearing) VALUES ('
+000000-    '$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,'
+000000-    '$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,'
+000000-    '$32,$33,$34,$35,$36,$37,$38,$39,$40);'
+000000-    'EXECUTE transacoes '
 000000        DELIMITED BY SIZE
 000000     ' trim('''CODIGO-BUSINESS-UNIT''')' DELIMITED BY SIZE
 000000     ', trim('''NUMERO-CARTAO''')' DELIMITED BY SIZE
@@ -780,7 +790,8 @@
 000000     ', TO_DATE('''DATA-VENCIMENTO''',''YYYYMMDD'')'
 000000     ', 'VALOR-TRANS-DOLAR-AUTORIZACAO DELIMITED BY SIZE
 000000     ', 'VALOR-TRANS-DOLAR-CLEARING');' DELIMITED BY SIZE
-000000        INTO WS-PREP-INS
+000000     'DEALLOCATE transacoes;'
+000000     INTO WS-PREP-INS.
 000000*
 000000     STRING 'UPDATE transacoesvision.t_transacoes'
 000000     ' SET situacao_transacao='''SITUACAO-TRANSACAO''''
@@ -815,7 +826,7 @@
 000000     ' and codigo_autorizacao=('''CODIGO-AUTORIZACAO''')'
 000000     ' and (data_vencimento is null or data_vencimento='
 000000     'TO_DATE('''DATA-VENCIMENTO''',''YYYYMMDD''))@'
-000000       DELIMITED BY SIZE INTO WS-PREP-UP
+000000       DELIMITED BY SIZE INTO WS-PREP-UP.
 000000*
 000000     IF NUMERO-BANKNET NOT = SPACES
 000000        STRING WS-PREP-UP DELIMITED BY '@'
@@ -880,14 +891,6 @@
 000000             INSPECT WS-PREP-UP REPLACING ALL '&' BY '@'
 000000         END-IF
 000000     END-IF.
-000000*
-000000*    IF SITUACAO-TRANSACAO = 'O' OR WS-TIPOCARGA = 'F'
-000000*        STRING WS-PREP-UP DELIMITED BY '@'
-000000*        ' and valor_transacao='VALOR-TRANSACAO'&'
-000000*        DELIMITED BY SIZE INTO WS-PREP-UP
-000000*        INSPECT WS-PREP-UP REPLACING ALL '@' BY SPACE
-000000*        INSPECT WS-PREP-UP REPLACING ALL '&' BY '@'
-000000*    END-IF.
 000000*
 000000     INSPECT WS-PREP-UP REPLACING ALL '@' BY ';'.
 000000     INSPECT WS-PREP-UP REPLACING ALL '&' BY SPACE.
